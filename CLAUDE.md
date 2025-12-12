@@ -8,8 +8,8 @@ n8n をそのままの CLI 仕様で Electron 内で起動し、ローカルユ�
 
 ## 最初に見るべき資料
 - `docs/00_ProjectPlan.md`: 開発構想、技術的な実現性、致命的リスク、想定フェーズ、テスト、費用対効果。
-- `docs/01_Architecture.md`: アーキテクチャの責任範囲、主要なユースケース、コンポーネント構成、物理配置、実装ビュー。
-- `docs/02_ImplementationDetails.md`: コードサンプル（main/n8n-manager/port-finder/preload/renderer）、ビルド設定、実装ステップ、既知課題、テスト項目。
+- `docs/00_Architecture.md`: アーキテクチャの責任範囲、主要なユースケース、コンポーネント構成、物理配置、実装ビュー。
+- `docs/02_ImplementationDetails.md`: ソースファイルの責務や重要なフロー、ビルド設定・リソース説明と、より詳細な `docs/03~06` 実装ドキュメントへのリンク。
 
 ## 参考リンク
 - n8n 公式: https://n8n.io/
