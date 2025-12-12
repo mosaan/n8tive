@@ -27,3 +27,7 @@ n8n をそのままの CLI 仕様で Electron 内で起動し、ローカルユ�
 - Electron: https://www.electronjs.org/
 - electron-vite: https://electron-vite.org/
 - electron-builder: https://www.electron.build/
+
+## 作業管理
+
+あなたは `docs\report\YYYYMMDD_N.md` (Nはその日付内での連番) に、作業記録を明記しつつ、「意味的に継続性のある一連の作業」の単位でGitのコミットを行って、何を行ってきたかを上司であるユーザに明らかにしながら作業を進める必要があります。この作業記録全体を指して「日報」と呼ぶことがある点に留意して下さい。
