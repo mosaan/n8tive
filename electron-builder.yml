@@ -1,0 +1,33 @@
+appId: com.n8tive.app
+productName: n8tive
+directories:
+  output: release/${version}
+files:
+  - out/**/*
+  - node_modules/**/*
+asar: true
+asarUnpack:
+  - node_modules/n8n/**/*
+  - node_modules/@n8n/**/*
+
+win:
+  target:
+    - nsis
+  icon: resources/icon.ico
+
+mac:
+  target:
+    - dmg
+  icon: resources/icon.icns
+  category: public.app-category.productivity
+
+linux:
+  target:
+    - AppImage
+  icon: resources/icon.png
+  category: Office
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false

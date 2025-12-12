@@ -1,0 +1,27 @@
+node_modules
+dist
+release
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.log
+*.local
+.env
+.env.local
+.env.*.local
+pnpm-debug.log*
+yarn.lock
+package-lock.json
+
+# n8n data directory
+.n8n
+
+out
+
+# Claude Code specific
+.claude/
+logs/
+
+# MCP configuration (environment specific)
+.mcp.json
