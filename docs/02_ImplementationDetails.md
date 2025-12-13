@@ -31,7 +31,7 @@
 - `window.electronAPI` を通じてログやステータスを受信し、Ready/エラー時に表示を更新。`loading.html`は起動完了後 `BrowserWindow.loadURL` で n8n UI に切り替わる。
 
 ### `electron-builder.yml`
-- `asar` 通常化と `asarUnpack` で `node_modules/n8n` や `@n8n` を展開。各プラットフォーム（Win: nsis, mac: dmg, Linux: AppImage）のアイコンやカテゴリ、NSIS のインストーラ設定（`oneClick`, インストール先変更許可）を定義。
+- `asar` 通常化と `asarUnpack` で `node_modules/n8n` や `@n8n` を展開。Windows（nsis）向けのアイコンとNSIS インストーラ設定（`oneClick`, インストール先変更許可）を定義。
 
 ### `package.json` / `tsconfig.json`
 - `package.json` は `dev`/`build`/`package`スクリプト、`dependencies` に `n8n`, `devDependencies` に Electron/Vite/TypeScript、`main` を `dist/main/index.js` に設定。
@@ -43,11 +43,9 @@
 ## データ保存場所
 
 ### ユーザーデータディレクトリ
-n8tive は Electron の `app.getPath('userData')` をベースにデータを保存します。OS ごとのパスは以下の通りです：
+n8tive は Electron の `app.getPath('userData')` をベースにデータを保存します。
 
 - **Windows**: `%APPDATA%\n8tive\` (例: `C:\Users\<username>\AppData\Roaming\n8tive\`)
-- **macOS**: `~/Library/Application Support/n8tive/`
-- **Linux**: `~/.config/n8tive/`
 
 ### n8n データフォルダ
 n8n は `N8N_USER_FOLDER` 環境変数で指定されたディレクトリ内に `.n8n` サブディレクトリを自動作成します。
@@ -55,8 +53,6 @@ n8n は `N8N_USER_FOLDER` 環境変数で指定されたディレクトリ内に
 - **設定**: `N8N_USER_FOLDER = app.getPath('userData')` (src/main/n8n-manager.ts)
 - **実際のデータ保存先**: `{userData}/.n8n/`
   - Windows: `C:\Users\<username>\AppData\Roaming\n8tive\.n8n\`
-  - macOS: `~/Library/Application Support/n8tive/.n8n/`
-  - Linux: `~/.config/n8tive/.n8n/`
 
 ### 保存されるデータ
 `.n8n/` ディレクトリには以下が保存されます：

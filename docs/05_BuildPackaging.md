@@ -1,7 +1,7 @@
 # n8tive ビルド・パッケージ構成
 
 ## 事前準備と目標
-アプリは Electron Vite でビルドし、Electron Builder で各プラットフォーム向けにパッケージングする。目指すのは、n8n を `asar` 内にバンドルしつつ、必要に応じて `asarUnpack` で展開する形で起動時間とサイズをバランスすること。
+アプリは Electron Vite でビルドし、Electron Builder でWindows向けにパッケージングする。目指すのは、n8n を `asar` 内にバンドルしつつ、必要に応じて `asarUnpack` で展開する形で起動時間とサイズをバランスすること。
 
 ## package.json
 ```json
@@ -48,26 +48,12 @@ win:
       arch: [x64]
   icon: resources/icon.ico
 
-mac:
-  target:
-    - target: dmg
-      arch: [x64, arm64]
-  icon: resources/icon.icns
-  category: public.app-category.developer-tools
-
-linux:
-  target:
-    - target: AppImage
-      arch: [x64]
-  icon: resources/icon.png
-  category: Development
-
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 ```
 
 ## リソースと構成
-- `resources/icon.*` を各 OS で参照し、mac の `icns`、Windows の `ico`、Linux の `png` を用意。
+- `resources/icon.ico` をWindows向けアイコンとして使用。
 - `tsconfig.json` では `dist` 出力先、`moduleResolution`、`esModuleInterop` などを設定し、`src/main`/`src/renderer` をコンパイル対象とする。
-- ビルドパイプラインは `electron-vite build` → `electron-builder` を想定し、`package` スクリプトから一発で全プラットフォームのバイナリを生成できるようにする。
+- ビルドパイプラインは `electron-vite build` → `electron-builder` を想定し、`package` スクリプトからWindowsバイナリ（NSIS インストーラ）を生成できるようにする。
