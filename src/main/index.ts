@@ -2,6 +2,9 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { N8nManager } from './n8n-manager';
 
+// Enable remote debugging for MCP tools
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
+
 let mainWindow: BrowserWindow | null = null;
 let n8nManager: N8nManager | null = null;
 
