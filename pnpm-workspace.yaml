@@ -1,2 +1,12 @@
 onlyBuiltDependencies:
-  - sqlite3
+  - '@parcel/watcher'
+  - '@scarf/scarf'
+  - '@sentry-internal/node-native-stacktrace'
+  - cpu-features
+  - electron
+  - electron-winstaller
+  - esbuild
+  - msgpackr-extract
+  - oracledb
+  - protobufjs
+  - ssh2

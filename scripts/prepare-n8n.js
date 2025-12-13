@@ -11,6 +11,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const projectRoot = path.join(__dirname, '..');
+const n8nVersionFile = path.join(projectRoot, 'n8n-version.json');
 const n8nDistDir = path.join(projectRoot, 'n8n-dist');
 const markerFile = path.join(projectRoot, '.n8n-prepared');
 const tarFile = path.join(projectRoot, 'n8n-dist.tar');
@@ -29,13 +30,33 @@ if (!fs.existsSync(n8nDistDir)) {
   fs.mkdirSync(n8nDistDir, { recursive: true });
 }
 
+// n8nのバージョンを取得（環境変数優先、なければファイル）
+const n8nVersion = (() => {
+  if (process.env.N8N_VERSION) return process.env.N8N_VERSION;
+
+  if (!fs.existsSync(n8nVersionFile)) {
+    console.error('[prepare-n8n] n8n-version.json not found and N8N_VERSION env not set.');
+    process.exit(1);
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(n8nVersionFile, 'utf8'));
+    if (!parsed.n8n) throw new Error('Missing "n8n" field');
+    return parsed.n8n;
+  } catch (err) {
+    console.error(`[prepare-n8n] Failed to read n8n version: ${err.message}`);
+    process.exit(1);
+  }
+})();
+console.log(`[prepare-n8n] Using n8n version: ${n8nVersion}`);
+
 // package.jsonを作成（n8nのみを依存関係として含める）
 const packageJson = {
   name: 'n8n-dist',
   version: '1.0.0',
   private: true,
   dependencies: {
-    n8n: require('../package.json').dependencies.n8n
+    n8n: n8nVersion
   }
 };
 

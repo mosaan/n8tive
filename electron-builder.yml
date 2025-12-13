@@ -4,12 +4,9 @@ directories:
   output: release/${version}
 files:
   - out/**/*
-  - "!node_modules/**/*"
 extraResources:
   - n8n-dist.tar
 asar: true
-buildDependenciesFromSource: false
-npmRebuild: false
 
 win:
   target:
