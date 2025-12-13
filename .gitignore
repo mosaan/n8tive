@@ -21,6 +21,7 @@ out
 
 # Claude Code specific
 .claude/
+.codex/
 logs/
 
 # MCP configuration (environment specific)
