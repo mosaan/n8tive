@@ -4,28 +4,16 @@ directories:
   output: release/${version}
 files:
   - out/**/*
-  - node_modules/**/*
+  - "!node_modules/**/*"
+extraResources:
+  - n8n-dist.tar
 asar: true
-asarUnpack:
-  - node_modules/n8n/**/*
-  - node_modules/@n8n/**/*
+buildDependenciesFromSource: false
+npmRebuild: false
 
 win:
   target:
     - nsis
-  icon: resources/icon.ico
-
-mac:
-  target:
-    - dmg
-  icon: resources/icon.icns
-  category: public.app-category.productivity
-
-linux:
-  target:
-    - AppImage
-  icon: resources/icon.png
-  category: Office
 
 nsis:
   oneClick: false

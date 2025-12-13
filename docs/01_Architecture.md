@@ -8,7 +8,7 @@
 - ローカルホスト上で Electron アプリが起動し、同梱した `n8n` CLI を `child_process.fork()` で起動して `WebView` からアクセスする、自己完結型のクライアントアプリケーション。
 - ユーザーは OS 上で Electron ウィンドウから n8n Editor と対話し、n8n のデータは `app.getPath('userData')/.n8n/` ディレクトリに保存される。
 - 外部サービスとの通信は基本的になく、Webhook 受信などのサーバー的な公開は行わず、127.0.0.1 のみを監視する。
-- アプリは主に Windows/macOS/Linux の各デスクトップ環境で動作し、Electron のビルトイン Node を利用して n8n のプロセスを起動・制御する。
+- アプリは主に Windows のデスクトップ環境で動作し、Electron のビルトイン Node を利用して n8n のプロセスを起動・制御する。
 
 ##### 1.2. アーキテクチャに影響を与える要因（制約と原動力）
 - n8n の依存が巨大（500MB 以上）であるため `electron-builder` の `asar` と `asarUnpack` を活用して容量と読み込み時間をコントロール。

@@ -8,7 +8,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
-    "package": "npm run build && electron-builder",
+    "prepare:n8n": "node scripts/prepare-n8n.js",
+    "package": "npm run prepare:n8n && npm run build && cross-env ELECTRON_BUILDER_SKIP_DEPENDENCY_SCAN=1 electron-builder",
     "rebuild:native": "cd node_modules/sqlite3 && npm run install && cd ../better-sqlite3 && npm run build-release"
   },
   "keywords": [
@@ -19,9 +20,9 @@
   ],
   "author": "n8tive",
   "license": "MIT",
-  "packageManager": "pnpm@10.7.1",
   "devDependencies": {
     "@types/node": "^25.0.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
@@ -32,6 +33,7 @@
   "dependencies": {
     "better-sqlite3": "^12.5.0",
     "n8n": "^1.123.5",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "tar": "^7.5.2"
   }
 }

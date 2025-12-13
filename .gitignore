@@ -17,6 +17,12 @@ package-lock.json
 # n8n data directory
 .n8n
 
+# n8n distribution files (generated during build)
+n8n-dist/
+n8n-dist.tar
+.n8n-prepared
+.n8n-installed
+
 out
 
 # Claude Code specific

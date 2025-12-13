@@ -1,7 +1,9 @@
 import { fork, ChildProcess } from 'child_process';
 import { app } from 'electron';
 import { join } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { findAvailablePort } from './port-finder';
+import * as tar from 'tar';
 
 export interface N8nManagerCallbacks {
   onLog?: (message: string) => void;
@@ -13,9 +15,61 @@ export class N8nManager {
   private n8nProcess: ChildProcess | null = null;
   private port: number = 5678;
   private callbacks: N8nManagerCallbacks = {};
+  private n8nInstallPath: string = '';
 
   constructor(callbacks: N8nManagerCallbacks = {}) {
     this.callbacks = callbacks;
+  }
+
+  /**
+   * n8nがインストールされているか確認し、必要に応じてtarから展開
+   */
+  private async ensureN8nInstalled(): Promise<void> {
+    const userDataPath = app.getPath('userData');
+    const n8nDistPath = join(userDataPath, 'n8n-dist');
+    const markerFile = join(userDataPath, '.n8n-installed');
+
+    // 既にインストール済みの場合はスキップ
+    if (existsSync(markerFile) && existsSync(n8nDistPath)) {
+      this.callbacks.onLog?.('n8n already installed');
+      this.n8nInstallPath = n8nDistPath;
+      return;
+    }
+
+    this.callbacks.onLog?.('Extracting n8n from archive...');
+
+    // tarファイルのパス（開発環境とパッケージ環境で異なる）
+    const isDev = !app.isPackaged;
+    const tarPath = isDev
+      ? join(app.getAppPath(), 'n8n-dist.tar')
+      : join(process.resourcesPath, 'n8n-dist.tar');
+
+    if (!existsSync(tarPath)) {
+      throw new Error(`n8n tar file not found at ${tarPath}`);
+    }
+
+    // 展開先ディレクトリを作成
+    if (!existsSync(n8nDistPath)) {
+      mkdirSync(n8nDistPath, { recursive: true });
+    }
+
+    // tarを展開
+    try {
+      await tar.x({
+        file: tarPath,
+        cwd: userDataPath,
+      });
+
+      this.callbacks.onLog?.('n8n extracted successfully');
+
+      // マーカーファイルを作成
+      writeFileSync(markerFile, new Date().toISOString());
+
+      this.n8nInstallPath = n8nDistPath;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to extract n8n: ${errorMessage}`);
+    }
   }
 
   /**
@@ -27,6 +81,9 @@ export class N8nManager {
     }
 
     try {
+      // n8nのインストールを確認・展開
+      await this.ensureN8nInstalled();
+
       // 利用可能なポートを検索
       this.port = await findAvailablePort();
       this.callbacks.onLog?.(`Found available port: ${this.port}`);
@@ -38,9 +95,8 @@ export class N8nManager {
       const n8nUserFolder = userDataPath;
 
       // n8n CLI のパスを取得
-      // require.resolve('n8n')でパッケージのルートを見つけて、bin/n8nを指定
-      const n8nPackagePath = require.resolve('n8n/package.json');
-      const n8nCliPath = join(n8nPackagePath, '..', 'bin', 'n8n');
+      // 展開したn8n-distディレクトリから取得
+      const n8nCliPath = join(this.n8nInstallPath, 'node_modules', 'n8n', 'bin', 'n8n');
 
       this.callbacks.onLog?.('Starting n8n...');
 

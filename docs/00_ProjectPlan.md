@@ -8,7 +8,7 @@
 - **目標**: Node.js を事前インストールせず、ダウンロードしてすぐ n8n を利用できる「デスクトップアプリ化」された n8n を提供する。
 - **主要な価値**: 最新の n8n を Electron ラッパー経由で起動し、ローカルで安全にワークフローを開発/実行できる UX を提供する（ダウンロード→起動だけで完結）。
 - **期待される成果**: カジュアルなユーザーや学習者が CLI やブラウザ設定を意識せず、n8n のエディタにアクセスできること。
-- **成功基準**: 1) 各プラットフォーム（Win/macOS/Linux）でパッケージングできる、2) n8n サーバーが自動的に起動し UI 表示につながる、3) データが `app.getPath('userData')/.n8n/` ディレクトリに永続化される。
+- **成功基準**: 1) Windows向けでパッケージングできる、2) n8n サーバーが自動的に起動し UI 表示につながる、3) データが `app.getPath('userData')/.n8n/` ディレクトリに永続化される。
 
 ##### 1.2 システムの責任範囲の定義
 - 含む: Electron + n8n CLI のバンドル、Electron メイン/レンダラーによる UI 表示、プロセス管理、ロギングとエラーハンドリング。
@@ -40,7 +40,7 @@
 - **Phase 1: 基本構造** ✅ 完了 – `package.json` と TypeScript 設定、Electron ウィンドウの表示まで。目標: `electron-vite dev` でロード画面が出る。
 - **Phase 2: n8n 起動** ✅ 完了 – `N8nManager` 実装、`fork()`、ログストリーム、停止再起動、ポート探索、ローディング画面へのイベント通知。
 - **Phase 3: UI 統合** ✅ 完了 – `loading.html` でログ/ステータス表示、`onN8nReady` で `loadURL`、`onN8nError` でエラー領域を表示。既存実装で要件を満たしている。
-- **Phase 4: ビルド・パッケージング** 🔄 進行中 – `electron-builder.yml` を整備し、各プラットフォーム（Windows: nsis、macOS: dmg、Linux: AppImage）でテスト。
+- **Phase 4: ビルド・パッケージング** 🔄 進行中 – `electron-builder.yml` を整備し、Windows（nsis）でテスト。
 - **テスト項目**:
   - ✅ n8n サーバーの起動確認（`onReady` コールバック）
   - ✅ ポート競合時の自動切り替え（`port-finder`）
