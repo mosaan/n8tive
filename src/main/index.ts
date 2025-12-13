@@ -7,6 +7,7 @@ app.commandLine.appendSwitch('remote-debugging-port', '9222');
 
 let mainWindow: BrowserWindow | null = null;
 let n8nManager: N8nManager | null = null;
+let isQuitting = false;
 
 /**
  * メインウィンドウを作成
@@ -107,8 +108,13 @@ app.on('window-all-closed', async () => {
  * アプリケーション終了前の処理
  */
 app.on('before-quit', async (event) => {
+  if (isQuitting) {
+    return;
+  }
+
   if (n8nManager && n8nManager.isRunning()) {
     event.preventDefault();
+    isQuitting = true;
     await n8nManager.stop();
     app.quit();
   }

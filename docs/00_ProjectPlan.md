@@ -37,17 +37,19 @@
 #### 第3章 開発計画の初期見積もりと評価（Planning and Assessment）
 
 ##### 3.1 プロジェクトの初期段階の計画
-- **Phase 1: 基本構造** – `package.json` と TypeScript 設定、Electron ウィンドウの表示まで。目標: `electron-vite dev` でロード画面が出る。
-- **Phase 2: n8n 起動** – `N8nManager` 実装、`fork()`、ログストリーム、停止再起動、ポート探索、ローディング画面へのイベント通知。
-- **Phase 3: UI 統合** – `loading.html` でログ/ステータス表示、`onN8nReady` で `loadURL`、`onN8nError` でエラー領域を表示。
-- **Phase 4: ビルド・パッケージング** – `electron-builder.yml` を整備し、各プラットフォーム（Windows: nsis、macOS: dmg、Linux: AppImage）でテスト。
+- **Phase 1: 基本構造** ✅ 完了 – `package.json` と TypeScript 設定、Electron ウィンドウの表示まで。目標: `electron-vite dev` でロード画面が出る。
+- **Phase 2: n8n 起動** 🔄 進行中 – `N8nManager` 実装、`fork()`、ログストリーム、停止再起動、ポート探索、ローディング画面へのイベント通知。
+- **Phase 3: UI 統合** ⏳ 未着手 – `loading.html` でログ/ステータス表示、`onN8nReady` で `loadURL`、`onN8nError` でエラー領域を表示。
+- **Phase 4: ビルド・パッケージング** ⏳ 未着手 – `electron-builder.yml` を整備し、各プラットフォーム（Windows: nsis、macOS: dmg、Linux: AppImage）でテスト。
 - **テスト項目**:
-  - n8n サーバーの起動確認（`onReady` コールバック）
-  - ポート競合時の自動切り替え（`port-finder`）
-  - アプリ終了時の n8n プロセス確実な終了（`stop()`）
-  - ワークフロー作成・実行（UI 経由）
-  - データ永続性（再起動後にも `.n8n` 内容保持）
-  - 各 OS でのパッケージング動作確認
+  - ✅ n8n サーバーの起動確認（`onReady` コールバック）
+  - ✅ ポート競合時の自動切り替え（`port-finder`）
+  - ⏳ アプリ終了時の n8n プロセス確実な終了（`stop()`）- 起動中の終了も含む
+  - ✅ ワークフロー作成・実行（UI 経由）
+  - ✅ データ永続性（再起動後にも `.n8n` 内容保持）
+  - ⏳ 各 OS でのパッケージング動作確認
+- **Phase 5: 快適性向上** ⏳ 未着手 – バックグラウンド起動（Windowsのシステムトレイにアイコン表示）による常駐、ポート競合時のセルフリカバリと Electron メニューからポート番号を指定して再起動できる設定メニュー（設定したポート番号は `app.getPath('userData')/n8tive_config.json` に保存し次回起動に反映。ポート未指定の場合のみデフォルトから +1 探索で自動解決。メニュー/ダイアログから「自動設定に戻す」を選ぶと保存済みポートを消去し自動探索に復帰）
+- **Phase 6: 安全性向上** ⏳ 未着手 – デフォルトをローカルアクセスのみとし、設定で外部アクセスを明示的に許可できるようにする（アクセス元制限やバインドアドレス変更を切替可能に）
 
 ##### 3.2 投資対効果（費用対効果）の評価（経済性）
 - **投資**: Electron/Vite/Electron-builder などのセットアップ、n8n の依存インストール（容量と時間）、各プラットフォームでの検証。
