@@ -38,13 +38,13 @@
 
 ##### 3.1 プロジェクトの初期段階の計画
 - **Phase 1: 基本構造** ✅ 完了 – `package.json` と TypeScript 設定、Electron ウィンドウの表示まで。目標: `electron-vite dev` でロード画面が出る。
-- **Phase 2: n8n 起動** 🔄 進行中 – `N8nManager` 実装、`fork()`、ログストリーム、停止再起動、ポート探索、ローディング画面へのイベント通知。
-- **Phase 3: UI 統合** ⏳ 未着手 – `loading.html` でログ/ステータス表示、`onN8nReady` で `loadURL`、`onN8nError` でエラー領域を表示。
-- **Phase 4: ビルド・パッケージング** ⏳ 未着手 – `electron-builder.yml` を整備し、各プラットフォーム（Windows: nsis、macOS: dmg、Linux: AppImage）でテスト。
+- **Phase 2: n8n 起動** ✅ 完了 – `N8nManager` 実装、`fork()`、ログストリーム、停止再起動、ポート探索、ローディング画面へのイベント通知。
+- **Phase 3: UI 統合** ✅ 完了 – `loading.html` でログ/ステータス表示、`onN8nReady` で `loadURL`、`onN8nError` でエラー領域を表示。既存実装で要件を満たしている。
+- **Phase 4: ビルド・パッケージング** 🔄 進行中 – `electron-builder.yml` を整備し、各プラットフォーム（Windows: nsis、macOS: dmg、Linux: AppImage）でテスト。
 - **テスト項目**:
   - ✅ n8n サーバーの起動確認（`onReady` コールバック）
   - ✅ ポート競合時の自動切り替え（`port-finder`）
-  - ⏳ アプリ終了時の n8n プロセス確実な終了（`stop()`）- 起動中の終了も含む
+  - ✅ アプリ終了時の n8n プロセス確実な終了（`stop()`）- 起動中の終了も含む
   - ✅ ワークフロー作成・実行（UI 経由）
   - ✅ データ永続性（再起動後にも `.n8n` 内容保持）
   - ⏳ 各 OS でのパッケージング動作確認
