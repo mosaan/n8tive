@@ -18,6 +18,7 @@
 ### `src/main/n8n-manager.ts`
 - n8n CLI を `fork()` し、`stdout/stderr` からのログを Renderer に転送。`findAvailablePort` で空きポートを選び、`N8N_USER_FOLDER`, `N8N_PORT`, `N8N_HOST` などの環境変数を設定。
 - `start/stop/restart` を実装し、プロセス終了時のログやエラーを `onReady/onLog/onError` でメインへ通知する。
+- **データ保存場所**: `N8N_USER_FOLDER` に `app.getPath('userData')` を設定。n8n は内部的に `N8N_USER_FOLDER/.n8n/` ディレクトリを作成し、そこに `database.sqlite`、ワークフロー設定、ログなどを保存する。
 
 ### `src/main/port-finder.ts`
 - `net.createServer()` を使って 5678 から順にポートを試行し、最大 100 個の範囲で空きポートを返却する。エラー時は例外を投げる。
@@ -38,6 +39,34 @@
 
 ### リソース
 - `resources/icon.*` は Electron ビルドで使用するアプリアイコン。`loading.html` や他の Renderer ファイルには追加のスタイル/HTML (`styles.css`, `index.html`) を置いて拡張可能。
+
+## データ保存場所
+
+### ユーザーデータディレクトリ
+n8tive は Electron の `app.getPath('userData')` をベースにデータを保存します。OS ごとのパスは以下の通りです：
+
+- **Windows**: `%APPDATA%\n8tive\` (例: `C:\Users\<username>\AppData\Roaming\n8tive\`)
+- **macOS**: `~/Library/Application Support/n8tive/`
+- **Linux**: `~/.config/n8tive/`
+
+### n8n データフォルダ
+n8n は `N8N_USER_FOLDER` 環境変数で指定されたディレクトリ内に `.n8n` サブディレクトリを自動作成します。
+
+- **設定**: `N8N_USER_FOLDER = app.getPath('userData')` (src/main/n8n-manager.ts)
+- **実際のデータ保存先**: `{userData}/.n8n/`
+  - Windows: `C:\Users\<username>\AppData\Roaming\n8tive\.n8n\`
+  - macOS: `~/Library/Application Support/n8tive/.n8n/`
+  - Linux: `~/.config/n8tive/.n8n/`
+
+### 保存されるデータ
+`.n8n/` ディレクトリには以下が保存されます：
+
+- `database.sqlite` - ワークフロー、実行履歴、認証情報などを格納する SQLite データベース
+- `config` - n8n の設定ファイル
+- `n8nEventLog.log` - n8n のイベントログ
+- `binaryData/` - ワークフロー実行時のバイナリデータ
+- `nodes/` - カスタムノード
+- `ssh/`, `git/` - Git 統合用の鍵と設定
 
 ## 補足
 - 実装の順序や既知の課題・テスト項目は `docs/00_ProjectPlan.md` に移行済みなので、本書ではソースコードの責務や構成にフォーカスしています。

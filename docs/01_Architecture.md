@@ -6,7 +6,7 @@
 
 ##### 1.1. システムの責任範囲と境界
 - ローカルホスト上で Electron アプリが起動し、同梱した `n8n` CLI を `child_process.fork()` で起動して `WebView` からアクセスする、自己完結型のクライアントアプリケーション。
-- ユーザーは OS 上で Electron ウィンドウから n8n Editor と対話し、n8n のデータは `app.getPath('userData')/.n8n` 配下に保存される。
+- ユーザーは OS 上で Electron ウィンドウから n8n Editor と対話し、n8n のデータは `app.getPath('userData')/.n8n/` ディレクトリに保存される。
 - 外部サービスとの通信は基本的になく、Webhook 受信などのサーバー的な公開は行わず、127.0.0.1 のみを監視する。
 - アプリは主に Windows/macOS/Linux の各デスクトップ環境で動作し、Electron のビルトイン Node を利用して n8n のプロセスを起動・制御する。
 
@@ -55,7 +55,7 @@
 
 ##### 4.3. 汎用の設計メカニズム
 - ロギング: メインと Renderer の間で `ipcMain`/`ipcRenderer` を使い、`stdin`/`stdout` のログをライブ表示。`preload` で `contextBridge` を用いて安全に公開。
-- データ永続性: `app.getPath('userData')/.n8n` に n8n が持つデータを保存することで、再起動後もワークフローを保持。
+- データ永続性: `app.getPath('userData')/.n8n/` ディレクトリに n8n が持つデータを保存することで、再起動後もワークフローを保持。
 - エラーハンドリング: `onError` で Renderer に通知、`stderr` 受信で処理。
 
 ##### 4.4. 重要なユースケースの実現（コラボレーション）

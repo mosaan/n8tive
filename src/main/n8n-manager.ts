@@ -32,8 +32,10 @@ export class N8nManager {
       this.callbacks.onLog?.(`Found available port: ${this.port}`);
 
       // n8n のユーザーデータディレクトリ
+      // n8nは内部的にN8N_USER_FOLDER/.n8nを作成するため、
+      // userDataPathをそのまま指定する
       const userDataPath = app.getPath('userData');
-      const n8nUserFolder = join(userDataPath, '.n8n');
+      const n8nUserFolder = userDataPath;
 
       // n8n CLI のパスを取得
       // require.resolve('n8n')でパッケージのルートを見つけて、bin/n8nを指定

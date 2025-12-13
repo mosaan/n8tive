@@ -90,7 +90,9 @@ export class N8nManager {
   async start(): Promise<void> {
     this.port = await findAvailablePort(5678);
     const n8nBinPath = require.resolve('n8n/bin/n8n');
-    const n8nUserFolder = path.join(this.options.userDataPath, '.n8n');
+    // n8nは内部的にN8N_USER_FOLDER/.n8nを作成するため、
+    // userDataPathをそのまま設定する
+    const n8nUserFolder = this.options.userDataPath;
 
     const env = {
       ...process.env,
