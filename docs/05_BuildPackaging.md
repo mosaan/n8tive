@@ -60,7 +60,11 @@ nsis:
 
 ---
 
-## ビルド戦略の変更：n8n-dist ディレクトリを直接同梱（tar 方式からの移行）
+## ビルド戦略の最終形：ジャンクション方式
+
+### 問題の変遷と解決策
+
+#### 問題1：tar方式からの移行
 
 ### 背景：従来のアプローチの問題点
 
@@ -103,8 +107,148 @@ nsis:
    - `extraResources` に `n8n-dist/**` を追加
 3. **実行時ロジック**：main プロセスで `resources/n8n-dist` からコピーし、`app.getPath('userCache')/n8n-dist`（または `N8N_DIST_PATH` 環境変数）に配置して起動
 
+#### 問題2：electron-builder の node_modules 除外
+
+**electron-builder 20.15.2 以降の制約**：`node_modules` という名前のディレクトリを `extraResources` でコピーしない仕様が判明。
+
+参考：
+- [Issue #3104: electron-builder does not copy directories named "node_modules"](https://github.com/electron-userland/electron-builder/issues/3104)
+- [Issue #3905: Copy node_modules from subdirectory](https://github.com/electron-userland/electron-builder/issues/3905)
+
+**初期解決策（リネーム方式）**：
+- prepare-n8n.js で `node_modules` → `n8n_modules` にリネーム
+- electron-builder が `n8n_modules` をコピー
+- afterPack hook で `n8n_modules` → `node_modules` に戻す
+
+**問題点**：開発モード（`pnpm dev`）で `node_modules` が見つからない
+
+#### 最終解決策：ジャンクション（Junction）方式 ✅
+
+**Windows のジャンクション機能**を活用：
+- ディレクトリのシンボリックリンク
+- **管理者権限不要**で作成可能
+- Node.js の `fs.symlinkSync(target, path, 'junction')` で作成
+
+### 最終実装：ジャンクション方式の詳細
+
+#### 1. prepare-n8n.js の処理フロー
+
+```javascript
+// 1. 通常通り node_modules にインストール
+execSync('npm install --omit=dev --no-optional', { cwd: n8nDistDir });
+
+// 2. node_modules を n8n_modules にリネーム
+fs.renameSync(nodeModulesPath, n8nModulesPath);
+
+// 3. n8n_modules への node_modules ジャンクションを作成
+fs.symlinkSync(n8nModulesPath, nodeModulesPath, 'junction');
+```
+
+**結果のディレクトリ構造**：
+```
+n8n-dist/
+├── n8n_modules/          ← 実体（890MB のパッケージ）
+├── node_modules/         ← ジャンクション（n8n_modules へのリンク）
+├── package.json
+└── package-lock.json
+```
+
+#### 2. 開発時の動作
+
+- `pnpm dev` 実行
+- Node.js は `node_modules`（ジャンクション）経由で `n8n_modules` を参照
+- 正常に動作 ✅
+
+#### 3. ビルド時の動作
+
+```yaml
+# electron-builder.yml
+extraResources:
+  - from: n8n-dist
+    to: n8n-dist
+afterPack: ./scripts/after-pack.js
+```
+
+**electron-builder のコピー挙動**：
+- `n8n_modules`（実体）→ **コピーされる** ✅
+- `node_modules`（ジャンクション）→ **コピーされない**（リンクのみスキップ）
+
+#### 4. afterPack hook の処理
+
+```javascript
+// scripts/after-pack.js
+exports.default = async function(context) {
+  const n8nModulesPath = path.join(appOutDir, 'resources', 'n8n-dist', 'n8n_modules');
+  const nodeModulesPath = path.join(appOutDir, 'resources', 'n8n-dist', 'node_modules');
+
+  // n8n_modules → node_modules にリネーム
+  fs.renameSync(n8nModulesPath, nodeModulesPath);
+};
+```
+
+**最終的なパッケージ構造**：
+```
+release/0.1.0/win-unpacked/resources/n8n-dist/
+├── node_modules/          ← 実体（正常に同梱）
+├── package.json
+└── package-lock.json
+```
+
+### ジャンクション方式の利点
+
+| 項目 | リネーム方式 | ジャンクション方式 |
+|------|-------------|-------------------|
+| 環境変数 | 必要 | **不要** ✅ |
+| スクリプト数 | 2つ | **1つ** ✅ |
+| リネーム回数 | 2回 | **1回**（afterPack のみ）✅ |
+| 管理者権限 | 不要 | **不要** ✅ |
+| 実装の複雑さ | やや複雑 | **シンプル** ✅ |
+
+### 現在の package.json（最終版）
+
+```json
+{
+  "name": "n8tive",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "prepare:n8n": "node scripts/prepare-n8n.js",
+    "package": "npm run prepare:n8n && npm run build && electron-builder"
+  }
+}
+```
+
+### 現在の electron-builder.yml（最終版）
+
+```yaml
+appId: com.n8tive.app
+productName: n8tive
+directories:
+  output: release/${version}
+files:
+  - out/**/*
+extraResources:
+  - from: n8n-dist
+    to: n8n-dist
+asar: true
+afterPack: ./scripts/after-pack.js
+
+win:
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+```
+
 ### 参考リンク
 
 - [electron-builder Issue #8857 - Maximum call stack size exceeded](https://github.com/electron-userland/electron-builder/issues/8857)
 - [pnpm Issue #7079 - Invalid string length](https://github.com/pnpm/pnpm/issues/7079)
+- [electron-builder Issue #3104 - node_modules not copied](https://github.com/electron-userland/electron-builder/issues/3104)
+- [electron-builder Issue #3905 - Copy node_modules from subdirectory](https://github.com/electron-userland/electron-builder/issues/3905)
 - [AutomateJoy GitHub Repository](https://github.com/newcl/AutomateJoy)
+- [Windows Junction Points Documentation](https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-points)

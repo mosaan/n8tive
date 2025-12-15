@@ -11,7 +11,7 @@
 - アプリは主に Windows のデスクトップ環境で動作し、Electron のビルトイン Node を利用して n8n のプロセスを起動・制御する。
 
 ##### 1.2. アーキテクチャに影響を与える要因（制約と原動力）
-- n8n の依存が巨大（500MB 以上）であるため `electron-builder` の `asar` と `asarUnpack` を活用して容量と読み込み時間をコントロール。
+- n8n の依存が巨大（500MB 以上）であるため `electron-builder` の `extraResources` でディレクトリを同梱し、ジャンクション方式で効率的にパッケージング。
 - n8n の起動成功までの時間が 30秒〜1分と長いため、ローディング画面とログストリーミングで UX を補強。
 - ポート 5678 をデフォルトとするが、競合時に `port-finder` モジュールで自動的に +1 ずつ探索し、実行中の n8n プロセスを常に `127.0.0.1` で固定。
 - n8n の挙動を改造せず CLI をそのまま使うため、依存バージョンは最新安定版を追随し、設定は環境変数ベース。
@@ -86,5 +86,5 @@
 - `electron-builder.yml`: 各プラットフォーム用ビルド設定（AppID, icon, ターゲット）。
 
 ##### 6.2. 実装モデルの構造
-- `package.json` (`dependencies` に `n8n`, `devDependencies` に Electron/Vite 等) を中心にビルド/パッケージングスクリプトを定義。
-- `resources/icon.*` や `tsconfig.json` など周辺ファイルも含め、`electron-vite build` → `electron-builder` のパイプラインを確立。
+- `package.json` (`devDependencies` に Electron/Vite/electron-builder 等) を中心にビルド/パッケージングスクリプトを定義。n8n は `scripts/prepare-n8n.js` で `n8n-dist/` に別途インストールし、ジャンクション方式で管理。
+- `resources/icon.*` や `tsconfig.json` など周辺ファイルも含め、`npm run prepare:n8n` → `electron-vite build` → `electron-builder` のパイプラインを確立。

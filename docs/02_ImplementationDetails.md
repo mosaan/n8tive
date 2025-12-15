@@ -31,11 +31,21 @@
 - `window.electronAPI` を通じてログやステータスを受信し、Ready/エラー時に表示を更新。`loading.html`は起動完了後 `BrowserWindow.loadURL` で n8n UI に切り替わる。
 
 ### `electron-builder.yml`
-- `asar` 通常化と `asarUnpack` で `node_modules/n8n` や `@n8n` を展開。Windows（nsis）向けのアイコンとNSIS インストーラ設定（`oneClick`, インストール先変更許可）を定義。
+- `asar: true` でアプリコードを圧縮。n8n は `extraResources` で `n8n-dist` ディレクトリ全体をコピー（ジャンクション方式により `n8n_modules` が実体として同梱され、`afterPack` hook で `node_modules` にリネーム）。Windows（nsis）向けのアイコンとNSIS インストーラ設定（`oneClick: false`, インストール先変更許可）を定義。
 
 ### `package.json` / `tsconfig.json`
-- `package.json` は `dev`/`build`/`package`スクリプト、`dependencies` に `n8n`, `devDependencies` に Electron/Vite/TypeScript、`main` を `dist/main/index.js` に設定。
+- `package.json` は `dev`/`build`/`prepare:n8n`/`package`スクリプトを定義。n8n は `dependencies` ではなく `scripts/prepare-n8n.js` で別途 `n8n-dist/` にインストール。`devDependencies` に Electron/Vite/TypeScript/electron-builder、`main` を `out/main/index.js` に設定。
 - `tsconfig.json` では `src/main`・`src/renderer` を含むビルド対象、ES2021 相当のターゲット、`node`/`dom` のプリセットなどを指定。
+
+### `scripts/prepare-n8n.js`
+- n8n とその依存関係を `n8n-dist/` ディレクトリにインストールする準備スクリプト。
+- `npm install` で `node_modules` にインストール後、`n8n_modules` にリネームし、`node_modules` ジャンクション（`n8n_modules` へのリンク）を作成。
+- これにより開発時は `node_modules` ジャンクション経由で参照、ビルド時は `n8n_modules` 実体のみがコピーされる。
+- マーカーファイル（`.n8n-prepared`）で重複実行を防止。
+
+### `scripts/after-pack.js`
+- electron-builder の `afterPack` hook として実行されるスクリプト。
+- パッケージ後の `resources/n8n-dist/n8n_modules` を `node_modules` にリネームし、実行時に正常に参照できるようにする。
 
 ### リソース
 - `resources/icon.*` は Electron ビルドで使用するアプリアイコン。`loading.html` や他の Renderer ファイルには追加のスタイル/HTML (`styles.css`, `index.html`) を置いて拡張可能。

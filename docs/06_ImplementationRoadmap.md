@@ -1,13 +1,13 @@
 # n8tive 実装ロードマップ・検証
 
 ## 実装フェーズ
-1. **Phase 1: 基本構造** – `package.json`・TypeScript・Electron ウィンドウのセットアップ。`electron-vite dev` でローディング画面を表示確認。
-2. **Phase 2: n8n 起動** – `N8nManager` の `fork()`、ログストリーミング、再起動/停止、`findAvailablePort` を導入。
-3. **Phase 3: UI 統合** – `loading.html` でログ/ステータス表示、`ready` イベントで `loadURL`、エラー表示対応。
-4. **Phase 4: ビルド・パッケージング** – `electron-builder.yml` を整備してWindows（NSIS）でパッケージングを確認。
+1. **Phase 1: 基本構造** ✅ – `package.json`・TypeScript・Electron ウィンドウのセットアップ。`electron-vite dev` でローディング画面を表示確認。
+2. **Phase 2: n8n 起動** ✅ – `N8nManager` の `fork()`、ログストリーミング、再起動/停止、`findAvailablePort` を導入。
+3. **Phase 3: UI 統合** ✅ – `loading.html` でログ/ステータス表示、`ready` イベントで `loadURL`、エラー表示対応。
+4. **Phase 4: ビルド・パッケージング** ✅ – `electron-builder.yml` を整備してWindows（NSIS）でパッケージングを確認。electron-builder の `node_modules` 除外問題をジャンクション方式で解決（詳細は `docs/05_BuildPackaging.md` と `docs/report/20251215_1.md` を参照）。
 
 ## 既知の課題・制限
-- **パッケージサイズ**: n8n 依存が 500MB 以上。`asar` 圧縮と `asarUnpack` 設定で管理。
+- **パッケージサイズ**: n8n 依存が 500MB 以上。`extraResources` で `n8n-dist` ディレクトリを同梱し、ジャンクション方式で管理。
 - **起動時間**: 初回起動に 30〜60 秒。ローディング画面とログで体感を改善。
 - **Windows の挙動**: `child_process.fork()` やパス区切り文字の取り扱いに注意が必要。
 - **Webhook/外部アクセス**: ローカル専用のため外部リクエストは受け付けない。必要ならドキュメントで明示する。
@@ -18,11 +18,19 @@
 - [x] アプリ終了時の n8n プロセスを確実に終了 (`stop()`)
 - [x] ワークフロー作成・実行（UI 経由）
 - [x] データ永続性（再起動後も `.n8n` が残る）
-- [ ] Windows でのパッケージング・起動
+- [x] Windows でのパッケージング・起動（ジャンクション方式で解決）
 
 ## 参考リンク
+
+### プロジェクト関連
 - n8n 公式: https://n8n.io/
 - n8n GitHub: https://github.com/n8n-io/n8n
 - Electron: https://www.electronjs.org/
 - electron-vite: https://electron-vite.org/
 - electron-builder: https://www.electron.build/
+
+### ジャンクション方式（Phase 4）
+- [electron-builder Issue #3104 - node_modules not copied](https://github.com/electron-userland/electron-builder/issues/3104)
+- [electron-builder Issue #3905 - Copy node_modules from subdirectory](https://github.com/electron-userland/electron-builder/issues/3905)
+- [Windows Junction Points Documentation](https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-points)
+- [AutomateJoy GitHub Repository](https://github.com/newcl/AutomateJoy) - 参考にした類似プロジェクト
