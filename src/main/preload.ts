@@ -17,11 +17,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('n8n-error', (_event, error: string) => callback(error));
   },
 
-  // n8n の進捗イベントを受信
-  onN8nProgress: (callback: (percent: number) => void) => {
-    ipcRenderer.on('n8n-progress', (_event, percent: number) => callback(percent));
-  },
-
   // n8n の再起動をリクエスト
   restartN8n: () => {
     return ipcRenderer.invoke('restart-n8n');
@@ -35,7 +30,6 @@ declare global {
       onN8nLog: (callback: (message: string) => void) => void;
       onN8nReady: (callback: (url: string) => void) => void;
       onN8nError: (callback: (error: string) => void) => void;
-      onN8nProgress: (callback: (percent: number) => void) => void;
       restartN8n: () => Promise<void>;
     };
   }

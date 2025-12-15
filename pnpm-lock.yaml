@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      tar:
-        specifier: ^7.5.2
-        version: 7.5.2
     devDependencies:
       '@types/node':
         specifier: ^25.0.1

@@ -60,11 +60,6 @@ async function startN8n(): Promise<void> {
         mainWindow.webContents.send('n8n-error', error);
       }
     },
-    onProgress: (percent: number) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('n8n-progress', percent);
-      }
-    },
   });
 
   try {

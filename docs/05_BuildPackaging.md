@@ -60,7 +60,7 @@ nsis:
 
 ---
 
-## ビルド戦略の変更：tarアーカイブ方式の採用
+## ビルド戦略の変更：n8n-dist ディレクトリを直接同梱（tar 方式からの移行）
 
 ### 背景：従来のアプローチの問題点
 
@@ -84,30 +84,24 @@ nsis:
 類似プロジェクト [AutomateJoy](https://github.com/newcl/AutomateJoy) を調査した結果、以下のアプローチを発見：
 
 1. **ビルド前**：別ディレクトリで n8n をインストール（例：`n8n-dist/`）
-2. **tar アーカイブ作成**：`n8n-dist/` 全体を `n8n-dist.tar` に圧縮
-3. **extraResources として配置**：tar ファイルを `extraResources` で electron-builder に渡す
-4. **実行時に展開**：アプリ起動時に tar を展開して n8n を実行
+2. **n8n-dist ディレクトリ生成**：`npm install n8n` を別ディレクトリ（n8n-dist/）に実行
+3. **extraResources として配置**：`n8n-dist/` フォルダを `extraResources` で electron-builder に渡す（展開不要、`filter` で node_modules/** と package*.json を明示）
+4. **実行時参照**：メインプロセスで `resources/n8n-dist` をそのまま使用（必要に応じて `N8N_DIST_PATH` 環境変数で上書き可）
 
-### tarアーカイブ方式の利点
+### ディレクトリ同梱方式の利点
 
-1. **electron-builder の依存関係コレクターを完全に回避**：tar ファイルは単一のバイナリファイルなので、`NpmNodeModulesCollector` がスキャンしない
-
-2. **ビルド時間の短縮**：大量のファイルコピーではなく、単一ファイルのコピーのみ
-
-3. **確実性**：依存関係ツリーの深さや循環参照に影響されない
-
-4. **柔軟性**：実行時に展開するため、アップデート時の対応が容易
+1. **依存スキャンを回避**：n8n を dependencies から外しているため、electron-builder の依存収集に引っかからない
+2. **展開処理が不要**：extraResources でコピー済みのフォルダをそのまま使えるため、起動待ち時間を削減
+3. **デバッグ容易**：tar 解凍が不要で中身を直接確認できる
 
 ### 実装方針
 
 以下の手順で実装：
 
-1. **ビルドスクリプト作成**：`scripts/build-n8n-tar.js` で n8n-dist ディレクトリを tar 化
-2. **準備スクリプト作成**：`scripts/prepare-n8n.js` で n8n のインストールと tar 作成を実行
-3. **electron-builder.yml 更新**：
-   - `files` から `node_modules/**/*` を除外
-   - `extraResources` に `n8n-dist.tar` を追加
-4. **実行時展開ロジック**：main プロセスで tar を展開し、展開先から n8n を起動
+1. **準備スクリプト**：`scripts/prepare-n8n.js` で n8n を n8n-dist にインストール（tar 化は行わない）
+2. **electron-builder.yml 更新**：
+   - `extraResources` に `n8n-dist/**` を追加
+3. **実行時ロジック**：main プロセスで `resources/n8n-dist` からコピーし、`app.getPath('userCache')/n8n-dist`（または `N8N_DIST_PATH` 環境変数）に配置して起動
 
 ### 参考リンク
 
