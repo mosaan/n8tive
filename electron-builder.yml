@@ -5,8 +5,10 @@ directories:
 files:
   - out/**/*
 extraResources:
-  - n8n-dist.tar
+  - from: n8n-dist
+    to: n8n-dist
 asar: true
+afterPack: ./scripts/after-pack.js
 
 win:
   target:

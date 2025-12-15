@@ -2,8 +2,7 @@
 
 /**
  * prepare-n8n.js
- * n8nとその依存関係をn8n-distディレクトリにインストールし、
- * tarアーカイブを作成する準備スクリプト
+ * n8nとその依存関係をn8n-distディレクトリにインストールする準備スクリプト
  */
 
 const fs = require('fs');
@@ -14,13 +13,11 @@ const projectRoot = path.join(__dirname, '..');
 const n8nVersionFile = path.join(projectRoot, 'n8n-version.json');
 const n8nDistDir = path.join(projectRoot, 'n8n-dist');
 const markerFile = path.join(projectRoot, '.n8n-prepared');
-const tarFile = path.join(projectRoot, 'n8n-dist.tar');
 
 console.log('[prepare-n8n] Starting n8n preparation...');
-
-// マーカーファイルとtarファイルが両方存在する場合はスキップ
-if (fs.existsSync(markerFile) && fs.existsSync(tarFile)) {
-  console.log('[prepare-n8n] n8n already prepared (marker and tar exist). Skipping...');
+// マーカーファイルが存在する場合はスキップ
+if (fs.existsSync(markerFile)) {
+  console.log('[prepare-n8n] n8n already prepared (marker exists). Skipping...');
   process.exit(0);
 }
 
@@ -78,16 +75,16 @@ try {
   process.exit(1);
 }
 
-// tarアーカイブを作成
-console.log('[prepare-n8n] Building tar archive...');
-try {
-  execSync('node scripts/build-n8n-tar.js', {
-    cwd: projectRoot,
-    stdio: 'inherit'
-  });
-} catch (error) {
-  console.error('[prepare-n8n] Failed to build tar:', error.message);
-  process.exit(1);
+// node_modules を n8n_modules にリネーム（electron-builder の制約回避）
+const nodeModulesPath = path.join(n8nDistDir, 'node_modules');
+const n8nModulesPath = path.join(n8nDistDir, 'n8n_modules');
+
+if (fs.existsSync(nodeModulesPath)) {
+  console.log('[prepare-n8n] Renaming node_modules to n8n_modules...');
+  fs.renameSync(nodeModulesPath, n8nModulesPath);
+  console.log('[prepare-n8n] Rename completed.');
+} else {
+  console.warn('[prepare-n8n] node_modules not found, skipping rename.');
 }
 
 // マーカーファイルを作成
@@ -96,7 +93,6 @@ fs.writeFileSync(markerFile, new Date().toISOString());
 
 console.log('[prepare-n8n] n8n preparation completed successfully!');
 console.log(`[prepare-n8n] n8n-dist size: ${getSizeInMB(n8nDistDir)} MB`);
-console.log(`[prepare-n8n] tar file size: ${getSizeInMB(tarFile)} MB`);
 
 function getSizeInMB(pathToCheck) {
   if (!fs.existsSync(pathToCheck)) return '0';
