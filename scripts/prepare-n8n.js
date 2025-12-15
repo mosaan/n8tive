@@ -61,9 +61,12 @@ const packageJsonPath = path.join(n8nDistDir, 'package.json');
 console.log('[prepare-n8n] Writing package.json...');
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-// npm installを実行（pnpmのロックファイル問題を回避）
+// npm installを実行（通常通り node_modules にインストール）
 console.log('[prepare-n8n] Installing n8n and dependencies...');
 console.log('[prepare-n8n] This may take several minutes...');
+
+const nodeModulesPath = path.join(n8nDistDir, 'node_modules');
+const n8nModulesPath = path.join(n8nDistDir, 'n8n_modules');
 
 try {
   execSync('npm install --omit=dev --no-optional', {
@@ -75,21 +78,22 @@ try {
   process.exit(1);
 }
 
-// ビルド時のみ node_modules を n8n_modules にリネーム（electron-builder の制約回避）
-// 開発時はリネームしない（環境変数 RENAME_NODE_MODULES=true でリネーム）
-if (process.env.RENAME_NODE_MODULES === 'true') {
-  const nodeModulesPath = path.join(n8nDistDir, 'node_modules');
-  const n8nModulesPath = path.join(n8nDistDir, 'n8n_modules');
+// node_modules を n8n_modules にリネーム
+console.log('[prepare-n8n] Renaming node_modules to n8n_modules...');
+if (fs.existsSync(n8nModulesPath)) {
+  fs.rmSync(n8nModulesPath, { recursive: true, force: true });
+}
+fs.renameSync(nodeModulesPath, n8nModulesPath);
 
-  if (fs.existsSync(nodeModulesPath)) {
-    console.log('[prepare-n8n] Renaming node_modules to n8n_modules for build...');
-    fs.renameSync(nodeModulesPath, n8nModulesPath);
-    console.log('[prepare-n8n] Rename completed.');
-  } else {
-    console.warn('[prepare-n8n] node_modules not found, skipping rename.');
-  }
-} else {
-  console.log('[prepare-n8n] Skipping rename (development mode).');
+// n8n_modules への node_modules ジャンクションを作成
+console.log('[prepare-n8n] Creating junction: node_modules -> n8n_modules...');
+try {
+  fs.symlinkSync(n8nModulesPath, nodeModulesPath, 'junction');
+  console.log('[prepare-n8n] Junction created successfully.');
+} catch (error) {
+  console.error('[prepare-n8n] Failed to create junction:', error.message);
+  console.error('[prepare-n8n] This may require running as administrator on older Windows versions.');
+  process.exit(1);
 }
 
 // マーカーファイルを作成
@@ -97,7 +101,8 @@ console.log('[prepare-n8n] Creating marker file...');
 fs.writeFileSync(markerFile, new Date().toISOString());
 
 console.log('[prepare-n8n] n8n preparation completed successfully!');
-console.log(`[prepare-n8n] n8n-dist size: ${getSizeInMB(n8nDistDir)} MB`);
+// n8n_modules（実体）のサイズを表示
+console.log(`[prepare-n8n] n8n_modules size: ${getSizeInMB(n8nModulesPath)} MB`);
 
 function getSizeInMB(pathToCheck) {
   if (!fs.existsSync(pathToCheck)) return '0';
@@ -121,7 +126,14 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 
   files.forEach(file => {
     const filePath = path.join(dirPath, file);
-    if (fs.statSync(filePath).isDirectory()) {
+    const stats = fs.lstatSync(filePath); // シンボリックリンクを追跡しない
+
+    // シンボリックリンク/ジャンクションはスキップ
+    if (stats.isSymbolicLink()) {
+      return;
+    }
+
+    if (stats.isDirectory()) {
       arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
     } else {
       arrayOfFiles.push(filePath);
