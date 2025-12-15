@@ -9,7 +9,8 @@
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
     "prepare:n8n": "node scripts/prepare-n8n.js",
-    "package": "npm run prepare:n8n && npm run build && electron-builder"
+    "prepare:n8n:build": "cross-env RENAME_NODE_MODULES=true node scripts/prepare-n8n.js",
+    "package": "npm run prepare:n8n:build && npm run build && electron-builder"
   },
   "keywords": [
     "n8n",

@@ -75,16 +75,21 @@ try {
   process.exit(1);
 }
 
-// node_modules を n8n_modules にリネーム（electron-builder の制約回避）
-const nodeModulesPath = path.join(n8nDistDir, 'node_modules');
-const n8nModulesPath = path.join(n8nDistDir, 'n8n_modules');
+// ビルド時のみ node_modules を n8n_modules にリネーム（electron-builder の制約回避）
+// 開発時はリネームしない（環境変数 RENAME_NODE_MODULES=true でリネーム）
+if (process.env.RENAME_NODE_MODULES === 'true') {
+  const nodeModulesPath = path.join(n8nDistDir, 'node_modules');
+  const n8nModulesPath = path.join(n8nDistDir, 'n8n_modules');
 
-if (fs.existsSync(nodeModulesPath)) {
-  console.log('[prepare-n8n] Renaming node_modules to n8n_modules...');
-  fs.renameSync(nodeModulesPath, n8nModulesPath);
-  console.log('[prepare-n8n] Rename completed.');
+  if (fs.existsSync(nodeModulesPath)) {
+    console.log('[prepare-n8n] Renaming node_modules to n8n_modules for build...');
+    fs.renameSync(nodeModulesPath, n8nModulesPath);
+    console.log('[prepare-n8n] Rename completed.');
+  } else {
+    console.warn('[prepare-n8n] node_modules not found, skipping rename.');
+  }
 } else {
-  console.warn('[prepare-n8n] node_modules not found, skipping rename.');
+  console.log('[prepare-n8n] Skipping rename (development mode).');
 }
 
 // マーカーファイルを作成

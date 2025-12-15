@@ -64,7 +64,8 @@ export class N8nManager {
 
       // n8n CLI のパスを取得
       // 展開したn8n-distディレクトリから取得
-      // （ビルド時は n8n_modules、パック後は afterPack hook で node_modules に戻される）
+      // 開発時は node_modules のまま、ビルド時のみ n8n_modules にリネームされ、
+      // afterPack hook で node_modules に戻される
       const n8nCliPath = join(this.n8nInstallPath, 'node_modules', 'n8n', 'bin', 'n8n');
       const n8nModulesPath = join(this.n8nInstallPath, 'node_modules');
 
