@@ -3,7 +3,7 @@ import { createServer } from 'net';
 /**
  * 指定されたポートが利用可能かどうかをチェック
  */
-function checkPort(port: number): Promise<boolean> {
+export function checkPort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = createServer();
 

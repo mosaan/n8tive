@@ -20,6 +20,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // n8n の再起動をリクエスト
   restartN8n: () => {
     return ipcRenderer.invoke('restart-n8n');
+  },
+
+  // 現在のポート設定を取得
+  getCurrentPort: () => {
+    return ipcRenderer.invoke('get-current-port');
+  },
+
+  // ポート設定を保存して再起動
+  savePortAndRestart: (port: number) => {
+    return ipcRenderer.invoke('save-port-and-restart', port);
+  },
+
+  // ポート設定ダイアログを閉じる
+  closePortSettings: () => {
+    return ipcRenderer.invoke('close-port-settings');
   }
 });
 
@@ -31,6 +46,9 @@ declare global {
       onN8nReady: (callback: (url: string) => void) => void;
       onN8nError: (callback: (error: string) => void) => void;
       restartN8n: () => Promise<void>;
+      getCurrentPort: () => Promise<number | undefined>;
+      savePortAndRestart: (port: number) => Promise<void>;
+      closePortSettings: () => Promise<void>;
     };
   }
 }

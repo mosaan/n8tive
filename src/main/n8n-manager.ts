@@ -1,8 +1,8 @@
 import { fork, ChildProcess } from 'child_process';
 import { app } from 'electron';
 import { join } from 'path';
-import { existsSync } from 'fs';
-import { findAvailablePort } from './port-finder';
+import { existsSync, mkdirSync, appendFileSync } from 'fs';
+import { findAvailablePort, checkPort } from './port-finder';
 
 export interface N8nManagerCallbacks {
   onLog?: (message: string) => void;
@@ -13,11 +13,53 @@ export interface N8nManagerCallbacks {
 export class N8nManager {
   private n8nProcess: ChildProcess | null = null;
   private port: number = 5678;
+  private preferredPort: number | undefined = undefined;
   private callbacks: N8nManagerCallbacks = {};
   private n8nInstallPath: string = '';
+  private logDir: string = '';
+  private logFilePath: string = '';
 
   constructor(callbacks: N8nManagerCallbacks = {}) {
     this.callbacks = callbacks;
+    this.initializeLogPaths();
+  }
+
+  /**
+   * ログファイルのパスを初期化
+   */
+  private initializeLogPaths(): void {
+    const userDataPath = app.getPath('userData');
+    this.logDir = join(userDataPath, 'logs');
+
+    // ログディレクトリが存在しない場合は作成
+    if (!existsSync(this.logDir)) {
+      mkdirSync(this.logDir, { recursive: true });
+    }
+
+    // ログファイルのパス（日付を含む）
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+    this.logFilePath = join(this.logDir, `n8n-${timestamp}.log`);
+  }
+
+  /**
+   * ログをファイルに書き込む
+   */
+  private writeToLogFile(prefix: string, message: string): void {
+    try {
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] [${prefix}] ${message}\n`;
+      appendFileSync(this.logFilePath, logEntry, 'utf-8');
+    } catch (error) {
+      console.error('Failed to write to log file:', error);
+    }
+  }
+
+  /**
+   * 優先ポート番号を設定
+   * 設定されている場合、自動探索ではなく指定ポートを使用する
+   */
+  setPreferredPort(port: number | undefined): void {
+    this.preferredPort = port;
   }
 
   /**
@@ -52,9 +94,23 @@ export class N8nManager {
       // n8nのインストールを確認・展開
       await this.ensureN8nInstalled();
 
-      // 利用可能なポートを検索
-      this.port = await findAvailablePort();
-      this.callbacks.onLog?.(`Found available port: ${this.port}`);
+      // ポート番号を決定
+      if (this.preferredPort !== undefined) {
+        // 優先ポートが設定されている場合
+        const isAvailable = await checkPort(this.preferredPort);
+        if (!isAvailable) {
+          throw new Error(
+            `Preferred port ${this.preferredPort} is already in use. ` +
+            `Please choose a different port or reset to auto-detection.`
+          );
+        }
+        this.port = this.preferredPort;
+        this.callbacks.onLog?.(`Using configured port: ${this.port}`);
+      } else {
+        // 自動探索
+        this.port = await findAvailablePort();
+        this.callbacks.onLog?.(`Found available port: ${this.port}`);
+      }
 
       // n8n のユーザーデータディレクトリ
       // n8nは内部的にN8N_USER_FOLDER/.n8nを作成するため、
@@ -83,6 +139,11 @@ export class N8nManager {
           N8N_LOG_LEVEL: 'info',
           // NODE_PATH を設定して n8n が依存関係を見つけられるようにする
           NODE_PATH: n8nModulesPath,
+          // 推奨される設定を追加（警告を抑制）
+          DB_SQLITE_POOL_SIZE: '3',
+          N8N_RUNNERS_ENABLED: 'true',
+          N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false',
+          N8N_GIT_NODE_DISABLE_BARE_REPOS: 'true',
         },
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       });
@@ -90,6 +151,11 @@ export class N8nManager {
       // 標準出力を監視
       this.n8nProcess.stdout?.on('data', (data: Buffer) => {
         const message = data.toString().trim();
+
+        // ログファイルに書き込み
+        this.writeToLogFile('STDOUT', message);
+
+        // コールバックに通知
         this.callbacks.onLog?.(message);
 
         // n8n が起動完了したかチェック
@@ -102,8 +168,12 @@ export class N8nManager {
       // 標準エラーを監視
       this.n8nProcess.stderr?.on('data', (data: Buffer) => {
         const message = data.toString().trim();
-        this.callbacks.onLog?.(`[ERROR] ${message}`);
-        this.callbacks.onError?.(message);
+
+        // ログファイルに書き込み
+        this.writeToLogFile('STDERR', message);
+
+        // コールバックに通知（警告も含めて参考情報として表示）
+        this.callbacks.onLog?.(`[STDERR] ${message}`);
       });
 
       // プロセス終了を監視
@@ -134,8 +204,11 @@ export class N8nManager {
    */
   async stop(): Promise<void> {
     if (!this.n8nProcess) {
+      this.callbacks.onLog?.('n8n is not running');
       return;
     }
+
+    this.callbacks.onLog?.('Stopping n8n process...');
 
     return new Promise((resolve) => {
       if (!this.n8nProcess) {
@@ -143,18 +216,39 @@ export class N8nManager {
         return;
       }
 
-      this.n8nProcess.once('exit', () => {
-        this.n8nProcess = null;
-        resolve();
+      const process = this.n8nProcess;
+      let resolved = false;
+
+      process.once('exit', (code, signal) => {
+        if (!resolved) {
+          resolved = true;
+          this.callbacks.onLog?.(`n8n process exited (code: ${code}, signal: ${signal})`);
+          this.n8nProcess = null;
+          resolve();
+        }
       });
 
-      // プロセスを終了
-      this.n8nProcess.kill('SIGTERM');
+      // SIGTERMを送信
+      this.callbacks.onLog?.('Sending SIGTERM to n8n process...');
+      const killed = process.kill('SIGTERM');
+
+      if (!killed) {
+        this.callbacks.onLog?.('Failed to send SIGTERM, trying SIGKILL...');
+        process.kill('SIGKILL');
+      }
 
       // 5秒後に強制終了
       setTimeout(() => {
-        if (this.n8nProcess) {
-          this.n8nProcess.kill('SIGKILL');
+        if (this.n8nProcess && !resolved) {
+          this.callbacks.onLog?.('n8n did not stop gracefully, forcing SIGKILL...');
+          const forceKilled = this.n8nProcess.kill('SIGKILL');
+
+          if (!forceKilled && !resolved) {
+            // プロセスが既に終了している場合
+            resolved = true;
+            this.n8nProcess = null;
+            resolve();
+          }
         }
       }, 5000);
     });
