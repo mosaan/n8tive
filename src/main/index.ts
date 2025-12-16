@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell } from 'electron';
 import { join } from 'path';
 import { N8nManager } from './n8n-manager';
 import { ConfigManager } from './config-manager';
@@ -97,6 +97,22 @@ function createTray(): void {
       type: 'separator',
     },
     {
+      label: 'View Logs...',
+      click: async () => {
+        try {
+          await openLogFolder();
+        } catch (error) {
+          dialog.showErrorBox(
+            'Error',
+            error instanceof Error ? error.message : 'Failed to open log folder'
+          );
+        }
+      },
+    },
+    {
+      type: 'separator',
+    },
+    {
       label: 'Exit',
       click: async () => {
         await quitApp();
@@ -117,6 +133,95 @@ function createTray(): void {
       }
     }
   });
+}
+
+/**
+ * Create application menu bar
+ */
+function createAppMenu(): void {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Settings',
+          submenu: [
+            {
+              label: 'Port Settings...',
+              click: () => {
+                showPortSettingsDialog();
+              },
+            },
+            {
+              label: 'Reset to Auto',
+              click: () => {
+                resetPortSettings();
+              },
+            },
+          ],
+        },
+        { type: 'separator' },
+        {
+          label: 'Exit',
+          click: async () => {
+            await quitApp();
+          },
+        },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: (item, focusedWindow) => {
+            if (focusedWindow) focusedWindow.reload();
+          },
+        },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: (item, focusedWindow) => {
+            if (focusedWindow) focusedWindow.webContents.toggleDevTools();
+          },
+        },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'View Logs...',
+          click: async () => {
+            try {
+              await openLogFolder();
+            } catch (error) {
+              dialog.showErrorBox(
+                'Error',
+                error instanceof Error ? error.message : 'Failed to open log folder'
+              );
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'About n8tive',
+          click: () => {
+            dialog.showMessageBox({
+              type: 'info',
+              title: 'About n8tive',
+              message: 'n8tive - n8n Desktop Wrapper',
+              detail: `Version: ${app.getVersion()}\n\nA desktop application wrapper for n8n workflow automation.`,
+            });
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
 /**
@@ -180,6 +285,31 @@ async function quitApp(): Promise<void> {
 
   // Quit app
   app.quit();
+}
+
+/**
+ * Open the log folder in the OS file explorer
+ */
+async function openLogFolder(): Promise<void> {
+  if (!n8nManager) {
+    throw new Error('n8n manager is not initialized');
+  }
+
+  const logDir = n8nManager.getLogDirectory();
+
+  // Check if directory exists
+  const { existsSync } = require('fs');
+  if (!existsSync(logDir)) {
+    throw new Error('Log directory does not exist yet. Logs will be created when n8n starts.');
+  }
+
+  // Open the folder in the default file explorer
+  const result = await shell.openPath(logDir);
+
+  // shell.openPath returns empty string on success, error message on failure
+  if (result) {
+    throw new Error(`Failed to open log folder: ${result}`);
+  }
 }
 
 /**
@@ -278,6 +408,7 @@ app.whenReady().then(() => {
   // Create window and tray
   createWindow();
   createTray();
+  createAppMenu();
 
   // Start n8n
   startN8n();
@@ -368,5 +499,30 @@ ipcMain.handle('close-port-settings', async () => {
   const settingsWindow = windows.find(w => w !== mainWindow);
   if (settingsWindow) {
     settingsWindow.close();
+  }
+});
+
+/**
+ * IPC Handler: Open log folder in file explorer
+ */
+ipcMain.handle('open-log-folder', async () => {
+  if (n8nManager) {
+    const logDir = n8nManager.getLogDirectory();
+
+    // Check if directory exists before opening
+    const fs = require('fs');
+    if (!fs.existsSync(logDir)) {
+      throw new Error('Log directory does not exist yet. Logs will be created when n8n starts.');
+    }
+
+    // Open the folder in the default file explorer
+    const result = await shell.openPath(logDir);
+
+    // shell.openPath returns empty string on success, error message on failure
+    if (result) {
+      throw new Error(`Failed to open log folder: ${result}`);
+    }
+  } else {
+    throw new Error('n8n manager is not initialized');
   }
 });

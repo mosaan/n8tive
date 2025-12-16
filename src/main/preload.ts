@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ポート設定ダイアログを閉じる
   closePortSettings: () => {
     return ipcRenderer.invoke('close-port-settings');
+  },
+
+  // Open log folder in file explorer
+  openLogFolder: () => {
+    return ipcRenderer.invoke('open-log-folder');
   }
 });
 
@@ -49,6 +54,7 @@ declare global {
       getCurrentPort: () => Promise<number | undefined>;
       savePortAndRestart: (port: number) => Promise<void>;
       closePortSettings: () => Promise<void>;
+      openLogFolder: () => Promise<void>;
     };
   }
 }

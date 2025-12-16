@@ -276,4 +276,18 @@ export class N8nManager {
   getPort(): number {
     return this.port;
   }
+
+  /**
+   * Get the log directory path
+   */
+  getLogDirectory(): string {
+    return this.logDir;
+  }
+
+  /**
+   * Get the current log file path
+   */
+  getLogFilePath(): string {
+    return this.logFilePath;
+  }
 }
