@@ -15,6 +15,35 @@
 - 含まない: 外部からの Webhook 受信やクラウド展開。ランタイム自体に n8n を修正は加えず、CLI をそのまま利用。
 - 外部インターフェイス: ユーザー操作（UI クリック）、OS ファイルシステム（ユーザーデータ保存）、ローカル HTTP (`127.0.0.1:<port>`) のみ。
 
+##### 1.3 バージョニングポリシー (Versioning Policy)
+
+n8tive は、ラッパー自体のバージョンとバンドルされた n8n のバージョンを明確に区別するため、SemVer ビルドメタデータを使用した独自のバージョニングスキームを採用しています。
+
+**バージョン形式**:
+```
+{n8tive-version}+n8n.{n8n-version}
+```
+
+**例**:
+- `1.0.0+n8n.2.0.2` - 初回リリース、n8n 2.0.2 をバンドル
+- `1.1.0+n8n.2.1.0` - ラッパー機能追加、n8n 2.1.0 にアップデート
+- `1.1.1+n8n.2.1.0` - ラッパーのバグフィックス、n8n は同じバージョン
+
+**バージョン管理**:
+- n8tive ラッパーのバージョンは `scripts/update-version.js` 内の定数 `N8TIVE_VERSION` で管理
+- n8n のバージョンは `n8n-version.json` で管理
+- 最終的なバージョン文字列は `pnpm run update:version` で自動生成され、`package.json` に書き込まれる
+- ビルド時（`pnpm package`）に自動的に更新されるため、手動での変更は不要
+
+**バージョンアップ手順**:
+1. **n8n のみアップデート**: `n8n-version.json` の `n8n` フィールドを更新
+2. **n8tive ラッパーのアップデート**: `scripts/update-version.js` の `N8TIVE_VERSION` を更新
+3. **ビルド**: `pnpm package` を実行すると自動的にバージョンが生成・反映される
+
+**表示場所**:
+- アプリケーションメニュー「Help → About n8tive」ダイアログ
+- ビルド出力ディレクトリ: `release/{version}/`
+
 #### 第2章 技術的実現性の確立とアーキテクチャ候補 (Technical Feasibility and Architecture Candidate)
 
 ##### 2.1 アーキテクチャ候補の概要

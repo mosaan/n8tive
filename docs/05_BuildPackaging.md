@@ -7,7 +7,7 @@
 ```json
 {
   "name": "n8n-desktop",
-  "version": "1.0.0",
+  "version": "1.0.0+n8n.2.0.2",  // Auto-generated, do not edit manually
   "description": "Desktop wrapper for n8n workflow automation",
   "main": "dist/main/index.js",
   "scripts": {
@@ -243,6 +243,28 @@ nsis:
   allowToChangeInstallationDirectory: true
   perMachine: false
 ```
+
+### バージョン管理の自動化
+
+#### update-version.js の役割
+
+`scripts/update-version.js` は、ビルド前に実行されるバージョン生成スクリプトです。
+
+**処理フロー**:
+1. `scripts/update-version.js` 内の `N8TIVE_VERSION` 定数を読み取る（例: `1.0.0`）
+2. `n8n-version.json` から n8n バージョンを読み取る（例: `^2.0.2`）
+3. セマンティックバージョニングのレンジ記号（`^`, `~` など）を除去（`2.0.2`）
+4. ビルドメタデータ形式で結合: `1.0.0+n8n.2.0.2`
+5. `package.json` の `version` フィールドを更新
+
+**統合**:
+- `pnpm package` の最初のステップとして自動実行
+- 手動実行: `pnpm run update:version`
+
+**バージョンアップ方法**:
+- **n8n のみ**: `n8n-version.json` を編集
+- **n8tive ラッパー**: `scripts/update-version.js` の `N8TIVE_VERSION` を編集
+- いずれの場合も、次回の `pnpm package` で自動的に反映される
 
 ### 参考リンク
 

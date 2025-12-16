@@ -43,6 +43,12 @@
 - これにより開発時は `node_modules` ジャンクション経由で参照、ビルド時は `n8n_modules` 実体のみがコピーされる。
 - マーカーファイル（`.n8n-prepared`）で重複実行を防止。
 
+### `scripts/update-version.js`
+- ビルド前にバージョン文字列を自動生成するスクリプト。
+- n8tive ラッパーのバージョン（スクリプト内の `N8TIVE_VERSION` 定数）と、`n8n-version.json` から読み取った n8n バージョンを組み合わせる。
+- SemVer ビルドメタデータ形式（`1.0.0+n8n.2.0.2`）で `package.json` の `version` フィールドを更新。
+- `pnpm package` の最初のステップとして自動実行されるため、手動でのバージョン編集は不要。
+
 ### `scripts/after-pack.js`
 - electron-builder の `afterPack` hook として実行されるスクリプト。
 - パッケージ後の `resources/n8n-dist/n8n_modules` を `node_modules` にリネームし、実行時に正常に参照できるようにする。
