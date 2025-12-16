@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ポート設定</title>
+  <title>Port Settings</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -108,10 +108,10 @@
 </head>
 <body>
   <div class="container">
-    <h2>ポート設定</h2>
+    <h2>Port Settings</h2>
     <form id="portForm">
       <div class="form-group">
-        <label for="portInput">ポート番号</label>
+        <label for="portInput">Port Number</label>
         <input
           type="number"
           id="portInput"
@@ -120,12 +120,12 @@
           placeholder="5678"
           required
         >
-        <div class="help-text">1024-65535の範囲で指定してください</div>
-        <div class="error" id="errorText">有効なポート番号を入力してください</div>
+        <div class="help-text">Please specify a port between 1024-65535</div>
+        <div class="error" id="errorText">Please enter a valid port number</div>
       </div>
       <div class="button-group">
-        <button type="button" class="btn-secondary" id="cancelBtn">キャンセル</button>
-        <button type="submit" class="btn-primary">保存して再起動</button>
+        <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary">Save & Restart</button>
       </div>
     </form>
   </div>

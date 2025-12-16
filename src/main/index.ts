@@ -13,7 +13,7 @@ let configManager: ConfigManager | null = null;
 let isQuitting = false;
 
 /**
- * メインウィンドウを作成
+ * Create main window
  */
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -26,16 +26,16 @@ function createWindow(): void {
     },
   });
 
-  // ローディング画面を表示
+  // Show loading screen
   const loadingPath = join(__dirname, '../renderer/loading.html');
   mainWindow.loadFile(loadingPath);
 
-  // 開発時はDevToolsを開く
+  // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools();
   }
 
-  // ウィンドウが閉じられたときの処理
+  // Handle window close event
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -49,10 +49,10 @@ function createWindow(): void {
 }
 
 /**
- * システムトレイを作成
+ * Create system tray
  */
 function createTray(): void {
-  // トレイアイコンのパスを取得
+  // Get tray icon path
   const iconPath = app.isPackaged
     ? join(process.resourcesPath, 'tray-icon.ico')
     : join(__dirname, '../../resources/tray-icon.ico');
@@ -62,10 +62,10 @@ function createTray(): void {
 
   tray.setToolTip('n8tive - n8n Desktop Wrapper');
 
-  // トレイメニューを作成
+  // Create tray menu
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '開く',
+      label: 'Open',
       click: () => {
         if (mainWindow) {
           mainWindow.show();
@@ -77,16 +77,16 @@ function createTray(): void {
       type: 'separator',
     },
     {
-      label: '設定',
+      label: 'Settings',
       submenu: [
         {
-          label: 'ポート設定...',
+          label: 'Port Settings...',
           click: () => {
             showPortSettingsDialog();
           },
         },
         {
-          label: '自動設定に戻す',
+          label: 'Reset to Auto',
           click: () => {
             resetPortSettings();
           },
@@ -97,7 +97,7 @@ function createTray(): void {
       type: 'separator',
     },
     {
-      label: '終了',
+      label: 'Exit',
       click: async () => {
         await quitApp();
       },
@@ -106,7 +106,7 @@ function createTray(): void {
 
   tray.setContextMenu(contextMenu);
 
-  // トレイアイコンをクリックしたときの処理
+  // Handle tray icon click
   tray.on('click', () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
@@ -120,7 +120,7 @@ function createTray(): void {
 }
 
 /**
- * ポート設定ダイアログを表示
+ * Show port settings dialog
  */
 function showPortSettingsDialog(): void {
   const settingsWindow = new BrowserWindow({
@@ -138,27 +138,27 @@ function showPortSettingsDialog(): void {
     },
   });
 
-  // 開発モードとビルドモードで異なるパス
+  // Different paths for development and build modes
   if (process.env.NODE_ENV === 'development') {
-    // 開発モードではdevサーバーからロード
+    // Load from dev server in development mode
     settingsWindow.loadURL('http://localhost:5173/port-settings.html');
   } else {
-    // ビルドモードではファイルからロード
+    // Load from file in build mode
     const settingsPath = join(__dirname, '../renderer/port-settings.html');
     settingsWindow.loadFile(settingsPath);
   }
 
-  // ウィンドウメニューを非表示
+  // Hide window menu
   settingsWindow.setMenu(null);
 
-  // 開発時はDevToolsを開く
+  // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
     settingsWindow.webContents.openDevTools();
   }
 }
 
 /**
- * アプリを終了（n8nプロセスを停止してから終了）
+ * Quit app (stop n8n process before quitting)
  */
 async function quitApp(): Promise<void> {
   if (isQuitting) {
@@ -167,7 +167,7 @@ async function quitApp(): Promise<void> {
 
   isQuitting = true;
 
-  // n8nプロセスを停止
+  // Stop n8n process
   if (n8nManager && n8nManager.isRunning()) {
     try {
       console.log('Stopping n8n before quit...');
@@ -178,45 +178,45 @@ async function quitApp(): Promise<void> {
     }
   }
 
-  // アプリを終了
+  // Quit app
   app.quit();
 }
 
 /**
- * ポート設定をリセット
+ * Reset port settings
  */
 async function resetPortSettings(): Promise<void> {
   if (!configManager || !n8nManager) {
     return;
   }
 
-  // 確認ダイアログを表示
+  // Show confirmation dialog
   const result = await dialog.showMessageBox({
     type: 'question',
-    buttons: ['キャンセル', '自動設定に戻して再起動'],
+    buttons: ['Cancel', 'Reset & Restart'],
     defaultId: 1,
-    title: 'ポート設定をリセット',
-    message: 'ポート設定を自動設定に戻しますか?',
-    detail: 'n8nが再起動され、利用可能なポートが自動的に検索されます。',
+    title: 'Reset Port Settings',
+    message: 'Reset port settings to automatic detection?',
+    detail: 'n8n will restart and automatically search for an available port.',
   });
 
   if (result.response === 1) {
     try {
-      // ポート設定をクリア
+      // Clear port setting
       configManager.clearPort();
 
-      // preferredPortもクリア
+      // Also clear preferredPort
       n8nManager.setPreferredPort(undefined);
 
-      // n8nを再起動
+      // Restart n8n
       await n8nManager.restart();
 
       console.log('Port settings reset to auto');
     } catch (error) {
       console.error('Failed to reset port settings:', error);
       dialog.showErrorBox(
-        'エラー',
-        'ポート設定のリセットに失敗しました: ' +
+        'Error',
+        'Failed to reset port settings: ' +
         (error instanceof Error ? error.message : 'Unknown error')
       );
     }
@@ -224,7 +224,7 @@ async function resetPortSettings(): Promise<void> {
 }
 
 /**
- * n8n マネージャーを初期化して起動
+ * Initialize and start n8n manager
  */
 async function startN8n(): Promise<void> {
   n8nManager = new N8nManager({
@@ -236,7 +236,7 @@ async function startN8n(): Promise<void> {
     onReady: (url: string) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('n8n-ready', url);
-        // n8n の UI をロード
+        // Load n8n UI
         mainWindow.loadURL(url);
       }
     },
@@ -247,7 +247,7 @@ async function startN8n(): Promise<void> {
     },
   });
 
-  // 設定されたポート番号を読み込んで設定
+  // Load and set configured port number
   if (configManager) {
     const preferredPort = configManager.getPort();
     if (preferredPort !== undefined) {
@@ -269,17 +269,17 @@ async function startN8n(): Promise<void> {
 }
 
 /**
- * アプリケーション起動時の処理
+ * Application startup handling
  */
 app.whenReady().then(() => {
-  // ConfigManagerを初期化
+  // Initialize ConfigManager
   configManager = new ConfigManager();
 
-  // ウィンドウとトレイを作成
+  // Create window and tray
   createWindow();
   createTray();
 
-  // n8nを起動
+  // Start n8n
   startN8n();
 
   app.on('activate', () => {
@@ -290,18 +290,18 @@ app.whenReady().then(() => {
 });
 
 /**
- * すべてのウィンドウが閉じられたときの処理
+ * Handle all windows closed
  */
 app.on('window-all-closed', () => {
-  // トレイ常駐モードなので、ウィンドウが閉じられてもアプリは終了しない
-  // macOS 以外でもトレイに残る
+  // Tray resident mode, so app doesn't quit when windows close
+  // Remains in tray even on non-macOS platforms
 });
 
 /**
- * アプリケーション終了前の処理
+ * Handle before quit
  */
 app.on('before-quit', async (event) => {
-  // まだn8nを停止していない場合
+  // If n8n not stopped yet
   if (!isQuitting && n8nManager && n8nManager.isRunning()) {
     event.preventDefault();
     await quitApp();
