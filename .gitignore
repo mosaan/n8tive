@@ -10,6 +10,10 @@ release
 .env
 .env.local
 .env.*.local
+
+# GitHub token backup (never commit)
+gh_token.txt
+
 pnpm-debug.log*
 yarn.lock
 package-lock.json

@@ -10,6 +10,15 @@ extraResources:
 asar: true
 afterPack: ./scripts/after-pack.js
 
+# Publishing Configuration
+publish:
+  provider: github
+  owner: mosaan
+  repo: n8tive
+  releaseType: draft
+  vPrefixedTagName: true
+  publishAutoUpdate: true
+
 win:
   target:
     - nsis

@@ -10,7 +10,8 @@
     "start": "electron-vite preview",
     "update:version": "node scripts/update-version.js",
     "prepare:n8n": "node scripts/prepare-n8n.js",
-    "package": "npm run update:version && npm run prepare:n8n && npm run build && electron-builder"
+    "package": "npm run update:version && npm run prepare:n8n && npm run build && electron-builder",
+    "package:publish": "npm run update:version && npm run prepare:n8n && npm run build && electron-builder --publish always"
   },
   "keywords": [
     "n8n",
