@@ -266,6 +266,51 @@ nsis:
 - **n8tive ラッパー**: `scripts/update-version.js` の `N8TIVE_VERSION` を編集
 - いずれの場合も、次回の `pnpm package` で自動的に反映される
 
+### GitHub Releases の公開設定
+
+#### electron-builder.yml の publish 設定
+
+GitHub Releases への公開を有効化するため、`publish` セクションを追加しています。
+
+```yaml
+publish:
+  provider: github
+  owner: mosaan
+  repo: n8tive
+  releaseType: draft
+  vPrefixedTagName: true
+  publishAutoUpdate: true
+```
+
+**設定の説明**:
+- `provider: github` - GitHub Releases を使用
+- `releaseType: draft` - ドラフトリリースとして作成（手動レビュー後に公開）
+- `vPrefixedTagName: true` - タグ名に `v` プレフィックスを付与（例: `v1.0.0+n8n.2.0.2`）
+- `publishAutoUpdate: true` - 自動更新用の `latest.yml` をアップロード
+
+#### 公開方法
+
+**前提条件**:
+1. GitHub Personal Access Token の作成（https://github.com/settings/tokens?type=beta）
+2. リポジトリ: mosaan/n8tive、権限: Contents (Read and write)
+3. 環境変数 `GH_TOKEN` に設定
+
+**公開手順**:
+```powershell
+# トークンを設定
+$env:GH_TOKEN = "your_token_here"
+
+# ビルドして公開
+pnpm package:publish
+```
+
+**公開されるファイル**:
+- `n8tive Setup {version}.exe` - インストーラー
+- `n8tive Setup {version}.exe.blockmap` - 差分更新用メタデータ
+- `latest.yml` - 自動更新設定
+
+詳細は `docs/07_ReleaseProcess.md` を参照してください。
+
 ### 参考リンク
 
 - [electron-builder Issue #8857 - Maximum call stack size exceeded](https://github.com/electron-userland/electron-builder/issues/8857)
