@@ -18,7 +18,29 @@ n8tive のリリースプロセスは、electron-builder と GitHub Releases を
 
 ### 2. 環境変数 GH_TOKEN の設定
 
-#### 方法 1: 現在のセッションのみ（PowerShell）
+#### 方法 1: .env ファイル（推奨）
+
+最もセキュアかつ便利な方法です。
+
+```powershell
+# 1. .env.example をコピーして .env を作成
+Copy-Item .env.example .env
+
+# 2. .env ファイルを編集してトークンを設定
+# GH_TOKEN=ghp_your_actual_token_here
+
+# 3. リリース時にスクリプトでトークンを読み込む
+. .\scripts\set-gh-token.ps1
+```
+
+**メリット**:
+- `.env` ファイルは `.gitignore` で除外済み（Git に誤コミットされない）
+- プロジェクト単位で管理できる
+- スクリプトで自動読み込み
+
+#### 方法 2: 現在のセッションのみ（PowerShell）
+
+一時的な使用に適しています。
 
 ```powershell
 # トークンを設定
@@ -28,7 +50,9 @@ $env:GH_TOKEN = "ghp_your_token_here"
 echo $env:GH_TOKEN
 ```
 
-#### 方法 2: 永続的な設定（ユーザー環境変数）
+#### 方法 3: 永続的な設定（ユーザー環境変数）
+
+すべてのプロジェクトで同じトークンを使う場合に便利です。
 
 1. Win + R → `sysdm.cpl` を実行
 2. "詳細設定" → "環境変数"
@@ -60,7 +84,16 @@ const N8TIVE_VERSION = '1.1.0';  // この値を変更
 #### 2. ビルドして GitHub に公開
 
 ```powershell
-# GH_TOKEN を設定（セッション内のみの場合）
+# GH_TOKEN を読み込む（.env ファイルを使用している場合）
+. .\scripts\set-gh-token.ps1
+
+# ビルドして公開
+pnpm package:publish
+```
+
+**別の方法**（.env を使わない場合）:
+```powershell
+# 手動でトークンを設定
 $env:GH_TOKEN = "your_token_here"
 
 # ビルドして公開
