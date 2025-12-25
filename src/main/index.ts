@@ -6,6 +6,26 @@ import { ConfigManager, ProxyConfig, CACertConfig } from './config-manager';
 // Enable remote debugging for MCP tools
 app.commandLine.appendSwitch('remote-debugging-port', '9222');
 
+/**
+ * Single instance lock
+ * Prevents multiple instances of the application from running simultaneously
+ */
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance is already running
+  // Wait for app to be ready before showing dialog, then quit
+  app.whenReady().then(() => {
+    dialog.showMessageBoxSync({
+      type: 'warning',
+      title: 'n8tive',
+      message: 'An instance is already running, so a second instance will not be started.',
+      buttons: ['OK'],
+    });
+    app.quit();
+  });
+} else {
+
 let mainWindow: BrowserWindow | null = null;
 let n8nManager: N8nManager | null = null;
 let tray: Tray | null = null;
@@ -501,6 +521,20 @@ async function startN8n(): Promise<void> {
 }
 
 /**
+ * Handle second instance launch attempt
+ * Focus the existing window when another instance tries to start
+ */
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
+/**
  * Application startup handling
  */
 app.whenReady().then(() => {
@@ -700,3 +734,5 @@ ipcMain.handle('select-certificate-file', async () => {
 
   return result.filePaths[0];
 });
+
+} // End of single instance else block
