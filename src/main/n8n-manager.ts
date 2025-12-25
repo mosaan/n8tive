@@ -3,11 +3,17 @@ import { app } from 'electron';
 import { join } from 'path';
 import { existsSync, mkdirSync, appendFileSync } from 'fs';
 import { findAvailablePort, checkPort } from './port-finder';
+import { ProxyConfig, CACertConfig } from './config-manager';
 
 export interface N8nManagerCallbacks {
   onLog?: (message: string) => void;
   onReady?: (url: string) => void;
   onError?: (error: string) => void;
+}
+
+export interface NetworkSettings {
+  proxy?: ProxyConfig;
+  caCert?: CACertConfig;
 }
 
 export class N8nManager {
@@ -18,6 +24,7 @@ export class N8nManager {
   private n8nInstallPath: string = '';
   private logDir: string = '';
   private logFilePath: string = '';
+  private networkSettings: NetworkSettings = {};
 
   constructor(callbacks: N8nManagerCallbacks = {}) {
     this.callbacks = callbacks;
@@ -60,6 +67,71 @@ export class N8nManager {
    */
   setPreferredPort(port: number | undefined): void {
     this.preferredPort = port;
+  }
+
+  /**
+   * Set network settings (proxy and CA certificate)
+   * These settings are applied when n8n process starts
+   */
+  setNetworkSettings(settings: NetworkSettings): void {
+    this.networkSettings = settings;
+    this.callbacks.onLog?.(`Network settings updated: proxy=${settings.proxy?.enabled ?? false}, caCert=${settings.caCert?.enabled ?? false}`);
+  }
+
+  /**
+   * Get current network settings
+   */
+  getNetworkSettings(): NetworkSettings {
+    return this.networkSettings;
+  }
+
+  /**
+   * Build environment variables for network settings
+   * Returns an object with proxy and CA certificate env vars
+   */
+  private buildNetworkEnvVars(): Record<string, string> {
+    const envVars: Record<string, string> = {};
+
+    // Proxy settings
+    if (this.networkSettings.proxy?.enabled && this.networkSettings.proxy.server) {
+      const proxyServer = this.networkSettings.proxy.server;
+      
+      // n8n uses proxy-from-env package which supports these env vars
+      // Lowercase variants have precedence, so we set both for compatibility
+      envVars.HTTP_PROXY = proxyServer;
+      envVars.HTTPS_PROXY = proxyServer;
+      envVars.http_proxy = proxyServer;
+      envVars.https_proxy = proxyServer;
+
+      // Bypass list (NO_PROXY)
+      // Always include localhost to ensure n8n Editor UI works
+      const defaultBypass = 'localhost,127.0.0.1';
+      const userBypass = this.networkSettings.proxy.bypass || '';
+      const combinedBypass = userBypass 
+        ? `${defaultBypass},${userBypass}` 
+        : defaultBypass;
+      
+      envVars.NO_PROXY = combinedBypass;
+      envVars.no_proxy = combinedBypass;
+
+      this.callbacks.onLog?.(`Proxy configured: ${proxyServer}`);
+      this.callbacks.onLog?.(`Proxy bypass: ${combinedBypass}`);
+    }
+
+    // CA Certificate settings
+    if (this.networkSettings.caCert?.enabled && this.networkSettings.caCert.path) {
+      const certPath = this.networkSettings.caCert.path;
+      
+      // Verify the certificate file exists
+      if (existsSync(certPath)) {
+        envVars.NODE_EXTRA_CA_CERTS = certPath;
+        this.callbacks.onLog?.(`CA certificate configured: ${certPath}`);
+      } else {
+        this.callbacks.onLog?.(`Warning: CA certificate file not found: ${certPath}`);
+      }
+    }
+
+    return envVars;
   }
 
   /**
@@ -127,11 +199,17 @@ export class N8nManager {
 
       this.callbacks.onLog?.('Starting n8n...');
 
+      // Build network environment variables (proxy, CA cert)
+      const networkEnvVars = this.buildNetworkEnvVars();
+
       // n8n プロセスを起動
       this.n8nProcess = fork(n8nCliPath, ['start'], {
         cwd: this.n8nInstallPath, // n8n-dist をカレントディレクトリに設定
         env: {
           ...process.env,
+          // Network settings (proxy, CA certificate) - applied first so they can be overridden if needed
+          ...networkEnvVars,
+          // n8n specific settings
           N8N_PORT: this.port.toString(),
           N8N_HOST: '127.0.0.1',
           N8N_USER_FOLDER: n8nUserFolder,

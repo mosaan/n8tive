@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, shell } from 'electron';
 import { join } from 'path';
 import { N8nManager } from './n8n-manager';
-import { ConfigManager } from './config-manager';
+import { ConfigManager, ProxyConfig, CACertConfig } from './config-manager';
 
 // Enable remote debugging for MCP tools
 app.commandLine.appendSwitch('remote-debugging-port', '9222');
@@ -86,7 +86,16 @@ function createTray(): void {
           },
         },
         {
-          label: 'Reset to Auto',
+          label: 'Network Settings...',
+          click: () => {
+            showNetworkSettingsDialog();
+          },
+        },
+        {
+          type: 'separator',
+        },
+        {
+          label: 'Reset Port to Auto',
           click: () => {
             resetPortSettings();
           },
@@ -153,7 +162,16 @@ function createAppMenu(): void {
               },
             },
             {
-              label: 'Reset to Auto',
+              label: 'Network Settings...',
+              click: () => {
+                showNetworkSettingsDialog();
+              },
+            },
+            {
+              type: 'separator',
+            },
+            {
+              label: 'Reset Port to Auto',
               click: () => {
                 resetPortSettings();
               },
@@ -175,15 +193,19 @@ function createAppMenu(): void {
         {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
-          click: (item, focusedWindow) => {
-            if (focusedWindow) focusedWindow.reload();
+          click: (_item, focusedWindow) => {
+            if (focusedWindow && 'reload' in focusedWindow) {
+              (focusedWindow as BrowserWindow).reload();
+            }
           },
         },
         {
           label: 'Toggle Developer Tools',
           accelerator: 'CmdOrCtrl+Shift+I',
-          click: (item, focusedWindow) => {
-            if (focusedWindow) focusedWindow.webContents.toggleDevTools();
+          click: (_item, focusedWindow) => {
+            if (focusedWindow && 'webContents' in focusedWindow) {
+              (focusedWindow as BrowserWindow).webContents.toggleDevTools();
+            }
           },
         },
       ],
@@ -259,6 +281,79 @@ function showPortSettingsDialog(): void {
   // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
     settingsWindow.webContents.openDevTools();
+  }
+}
+
+/**
+ * Show network settings dialog
+ */
+function showNetworkSettingsDialog(): void {
+  const networkWindow = new BrowserWindow({
+    width: 500,
+    height: 520,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    modal: true,
+    parent: mainWindow || undefined,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  // Different paths for development and build modes
+  if (process.env.NODE_ENV === 'development') {
+    // Load from dev server in development mode
+    networkWindow.loadURL('http://localhost:5173/network-settings.html');
+  } else {
+    // Load from file in build mode
+    const networkPath = join(__dirname, '../renderer/network-settings.html');
+    networkWindow.loadFile(networkPath);
+  }
+
+  // Hide window menu
+  networkWindow.setMenu(null);
+
+  // Open DevTools in development mode
+  if (process.env.NODE_ENV === 'development') {
+    networkWindow.webContents.openDevTools();
+  }
+}
+
+/**
+ * Configure Electron session proxy based on settings
+ * This applies proxy settings to the BrowserWindow that displays n8n Editor
+ */
+async function configureSessionProxy(): Promise<void> {
+  if (!configManager || !mainWindow) {
+    return;
+  }
+
+  const proxyConfig = configManager.getProxy();
+  
+  if (proxyConfig?.enabled && proxyConfig.server) {
+    try {
+      // Configure proxy for the main window session
+      await mainWindow.webContents.session.setProxy({
+        proxyRules: proxyConfig.server,
+        proxyBypassRules: `localhost,127.0.0.1${proxyConfig.bypass ? ',' + proxyConfig.bypass : ''}`,
+      });
+      console.log('Session proxy configured:', proxyConfig.server);
+    } catch (error) {
+      console.error('Failed to configure session proxy:', error);
+    }
+  } else {
+    // Clear proxy settings (use direct connection)
+    try {
+      await mainWindow.webContents.session.setProxy({
+        mode: 'direct',
+      });
+      console.log('Session proxy cleared (direct connection)');
+    } catch (error) {
+      console.error('Failed to clear session proxy:', error);
+    }
   }
 }
 
@@ -383,9 +478,16 @@ async function startN8n(): Promise<void> {
     if (preferredPort !== undefined) {
       n8nManager.setPreferredPort(preferredPort);
     }
+
+    // Load and set network settings (proxy and CA certificate)
+    const networkSettings = configManager.getNetworkSettings();
+    n8nManager.setNetworkSettings(networkSettings);
   }
 
   try {
+    // Configure Electron session proxy before starting n8n
+    await configureSessionProxy();
+    
     await n8nManager.start();
   } catch (error) {
     console.error('Failed to start n8n:', error);
@@ -525,4 +627,76 @@ ipcMain.handle('open-log-folder', async () => {
   } else {
     throw new Error('n8n manager is not initialized');
   }
+});
+
+/**
+ * IPC Handler: Get current network settings
+ */
+ipcMain.handle('get-network-settings', async () => {
+  if (configManager) {
+    return configManager.getNetworkSettings();
+  }
+  return { proxy: undefined, caCert: undefined };
+});
+
+/**
+ * IPC Handler: Save network settings and restart n8n
+ */
+ipcMain.handle('save-network-settings-and-restart', async (_event, settings: { proxy?: ProxyConfig; caCert?: CACertConfig }) => {
+  if (configManager && n8nManager) {
+    try {
+      // Save network settings
+      configManager.setNetworkSettings(settings);
+
+      // Apply network settings to n8n manager
+      n8nManager.setNetworkSettings(settings);
+
+      // Configure Electron session proxy
+      await configureSessionProxy();
+
+      // Restart n8n
+      await n8nManager.restart();
+
+      // Close the settings dialog
+      const windows = BrowserWindow.getAllWindows();
+      const networkWindow = windows.find(w => w !== mainWindow);
+      if (networkWindow) {
+        networkWindow.close();
+      }
+    } catch (error) {
+      console.error('Failed to save network settings and restart:', error);
+      throw error;
+    }
+  }
+});
+
+/**
+ * IPC Handler: Close network settings dialog
+ */
+ipcMain.handle('close-network-settings', async () => {
+  const windows = BrowserWindow.getAllWindows();
+  const networkWindow = windows.find(w => w !== mainWindow);
+  if (networkWindow) {
+    networkWindow.close();
+  }
+});
+
+/**
+ * IPC Handler: Select certificate file via dialog
+ */
+ipcMain.handle('select-certificate-file', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Select CA Certificate File',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Certificate Files', extensions: ['pem', 'crt', 'cer'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
 });

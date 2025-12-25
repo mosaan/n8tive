@@ -1,5 +1,22 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+// Type definitions for network settings
+interface ProxyConfig {
+  enabled: boolean;
+  server?: string;
+  bypass?: string;
+}
+
+interface CACertConfig {
+  enabled: boolean;
+  path?: string;
+}
+
+interface NetworkSettings {
+  proxy?: ProxyConfig;
+  caCert?: CACertConfig;
+}
+
 // Renderer プロセスに公開する安全な API
 contextBridge.exposeInMainWorld('electronAPI', {
   // n8n のログメッセージを受信
@@ -40,7 +57,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Open log folder in file explorer
   openLogFolder: () => {
     return ipcRenderer.invoke('open-log-folder');
-  }
+  },
+
+  // Get current network settings (proxy and CA certificate)
+  getNetworkSettings: (): Promise<NetworkSettings> => {
+    return ipcRenderer.invoke('get-network-settings');
+  },
+
+  // Save network settings and restart n8n
+  saveNetworkSettingsAndRestart: (settings: NetworkSettings): Promise<void> => {
+    return ipcRenderer.invoke('save-network-settings-and-restart', settings);
+  },
+
+  // Close network settings dialog
+  closeNetworkSettings: () => {
+    return ipcRenderer.invoke('close-network-settings');
+  },
+
+  // Open file dialog to select certificate file
+  selectCertificateFile: (): Promise<string | null> => {
+    return ipcRenderer.invoke('select-certificate-file');
+  },
 });
 
 // TypeScript の型定義（グローバルスコープ用）
@@ -55,6 +92,10 @@ declare global {
       savePortAndRestart: (port: number) => Promise<void>;
       closePortSettings: () => Promise<void>;
       openLogFolder: () => Promise<void>;
+      getNetworkSettings: () => Promise<NetworkSettings>;
+      saveNetworkSettingsAndRestart: (settings: NetworkSettings) => Promise<void>;
+      closeNetworkSettings: () => Promise<void>;
+      selectCertificateFile: () => Promise<string | null>;
     };
   }
 }

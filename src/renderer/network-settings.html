@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Settings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      overflow-y: auto;
+    }
+
+    .container {
+      max-width: 100%;
+      background: white;
+      padding: 16px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    h3 {
+      margin: 16px 0 12px 0;
+      font-size: 14px;
+      color: #555;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    input[type="text"]:disabled {
+      background: #f0f0f0;
+      color: #999;
+    }
+
+    .file-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .file-input-group input[type="text"] {
+      flex: 1;
+    }
+
+    .file-input-group button {
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .file-input-group button:hover:not(:disabled) {
+      background: #e8e8e8;
+    }
+
+    .file-input-group button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-primary:disabled {
+      background: #a5d6a7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .error {
+      color: #f44336;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-enabled {
+      background: #4CAF50;
+    }
+
+    .status-disabled {
+      background: #ccc;
+    }
+
+    .warning {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 12px;
+      color: #e65100;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Network Settings</h2>
+    
+    <form id="networkForm">
+      <!-- Proxy Settings Section -->
+      <div class="section">
+        <h3>Proxy Settings</h3>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="proxyEnabled">
+            <span>Enable proxy</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="proxyServer">Proxy Server URL</label>
+          <input
+            type="text"
+            id="proxyServer"
+            placeholder="http://proxy.example.com:8080"
+            disabled
+          >
+          <div class="help-text">
+            Example: http://proxy.company.com:8080 or http://user:pass@proxy:8080
+          </div>
+          <div class="error" id="proxyServerError">Please enter a valid proxy URL</div>
+        </div>
+
+        <div class="form-group">
+          <label for="proxyBypass">Bypass Proxy For (NO_PROXY)</label>
+          <input
+            type="text"
+            id="proxyBypass"
+            placeholder="*.local,internal.company.com"
+            disabled
+          >
+          <div class="help-text">
+            Comma-separated list of hosts. localhost and 127.0.0.1 are always bypassed.
+          </div>
+        </div>
+      </div>
+
+      <!-- CA Certificate Section -->
+      <div class="section">
+        <h3>CA Certificate</h3>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="caCertEnabled">
+            <span>Use custom CA certificate</span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="caCertPath">Certificate File Path</label>
+          <div class="file-input-group">
+            <input
+              type="text"
+              id="caCertPath"
+              placeholder="/path/to/certificate.pem"
+              disabled
+            >
+            <button type="button" id="browseCertBtn" disabled>Browse...</button>
+          </div>
+          <div class="help-text">
+            PEM format certificate file (.pem, .crt, or .cer). For Zscaler, export the root CA certificate.
+          </div>
+          <div class="error" id="caCertError">Please select a valid certificate file</div>
+        </div>
+      </div>
+
+      <div class="warning">
+        Changes to network settings require restarting n8n. Your workflows will be temporarily unavailable during restart.
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save & Restart</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('networkForm');
+    const proxyEnabled = document.getElementById('proxyEnabled');
+    const proxyServer = document.getElementById('proxyServer');
+    const proxyBypass = document.getElementById('proxyBypass');
+    const proxyServerError = document.getElementById('proxyServerError');
+    const caCertEnabled = document.getElementById('caCertEnabled');
+    const caCertPath = document.getElementById('caCertPath');
+    const browseCertBtn = document.getElementById('browseCertBtn');
+    const caCertError = document.getElementById('caCertError');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // Toggle proxy fields based on checkbox
+    proxyEnabled.addEventListener('change', () => {
+      const enabled = proxyEnabled.checked;
+      proxyServer.disabled = !enabled;
+      proxyBypass.disabled = !enabled;
+      if (!enabled) {
+        proxyServerError.classList.remove('show');
+      }
+    });
+
+    // Toggle CA cert fields based on checkbox
+    caCertEnabled.addEventListener('change', () => {
+      const enabled = caCertEnabled.checked;
+      caCertPath.disabled = !enabled;
+      browseCertBtn.disabled = !enabled;
+      if (!enabled) {
+        caCertError.classList.remove('show');
+      }
+    });
+
+    // Browse for certificate file
+    browseCertBtn.addEventListener('click', async () => {
+      try {
+        const filePath = await window.electronAPI.selectCertificateFile();
+        if (filePath) {
+          caCertPath.value = filePath;
+        }
+      } catch (error) {
+        console.error('Failed to select certificate file:', error);
+      }
+    });
+
+    // Load current settings
+    window.electronAPI.getNetworkSettings().then(settings => {
+      if (settings.proxy) {
+        proxyEnabled.checked = settings.proxy.enabled || false;
+        proxyServer.value = settings.proxy.server || '';
+        proxyBypass.value = settings.proxy.bypass || '';
+        proxyServer.disabled = !proxyEnabled.checked;
+        proxyBypass.disabled = !proxyEnabled.checked;
+      }
+      
+      if (settings.caCert) {
+        caCertEnabled.checked = settings.caCert.enabled || false;
+        caCertPath.value = settings.caCert.path || '';
+        caCertPath.disabled = !caCertEnabled.checked;
+        browseCertBtn.disabled = !caCertEnabled.checked;
+      }
+    });
+
+    // Validate proxy URL
+    function isValidProxyUrl(url) {
+      if (!url) return false;
+      try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      let hasError = false;
+
+      // Validate proxy settings
+      if (proxyEnabled.checked) {
+        if (!isValidProxyUrl(proxyServer.value)) {
+          proxyServerError.classList.add('show');
+          hasError = true;
+        } else {
+          proxyServerError.classList.remove('show');
+        }
+      }
+
+      // Validate CA cert settings
+      if (caCertEnabled.checked) {
+        if (!caCertPath.value.trim()) {
+          caCertError.classList.add('show');
+          hasError = true;
+        } else {
+          caCertError.classList.remove('show');
+        }
+      }
+
+      if (hasError) {
+        return;
+      }
+
+      // Disable save button during save
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        const settings = {
+          proxy: {
+            enabled: proxyEnabled.checked,
+            server: proxyServer.value.trim() || undefined,
+            bypass: proxyBypass.value.trim() || undefined,
+          },
+          caCert: {
+            enabled: caCertEnabled.checked,
+            path: caCertPath.value.trim() || undefined,
+          },
+        };
+
+        await window.electronAPI.saveNetworkSettingsAndRestart(settings);
+      } catch (error) {
+        console.error('Failed to save network settings:', error);
+        alert('Failed to save settings: ' + error.message);
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Restart';
+      }
+    });
+
+    // Cancel button
+    cancelBtn.addEventListener('click', () => {
+      window.electronAPI.closeNetworkSettings();
+    });
+  </script>
+</body>
+</html>
