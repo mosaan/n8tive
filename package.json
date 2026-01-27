@@ -1,6 +1,6 @@
 {
   "name": "n8tive",
-  "version": "1.0.0+n8n.2.0.2",
+  "version": "1.1.0+n8n.2.4.6",
   "description": "n8n Desktop Wrapper - Run n8n as a desktop application",
   "main": "out/main/index.js",
   "scripts": {
