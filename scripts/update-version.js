@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 // n8tive ラッパー自体のベースバージョン
-const N8TIVE_VERSION = '1.0.0';
+const N8TIVE_VERSION = '1.1.0';
 
 const projectRoot = path.join(__dirname, '..');
 const n8nVersionFile = path.join(projectRoot, 'n8n-version.json');
